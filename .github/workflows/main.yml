@@ -26,6 +26,6 @@ jobs:
         with:
           push: true
           tags: |
-            "registry.rostlab.org/rostlab/tmvisdb:${{ github.ref }}"
+            "registry.rostlab.org/rostlab/tmvisdb:${{ github.ref_name }}"
             "registry.rostlab.org/rostlab/tmvisdb:latest"
           build-args: "GIT_HASH=${GITHUB_SHA}"
