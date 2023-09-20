@@ -3,7 +3,7 @@ name: Deploy Docker
 # Run workflow on tags starting with v (eg. v2, v1.2.0)
 on:
   push:
-    tags:        
+    tags:
       - v*
 
 jobs:
@@ -15,15 +15,15 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_REGISTRY_TOKEN }}
+          registry: registry.rostlab.org
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: 
-            - ghcr.io/${{ github.repository }}:${{ github.ref }}
-            - ghcr.io/${{ github.repository }}:latest
+          tags:
+            - registry.rostlab.org/rostlab/tmvisdb:${{ github.ref }}
+            - registry.rostlab.org/rostlab/tmvisdb:latest
           build-args:
             - GIT_HASH=${{ GITHUB_SHA }}
