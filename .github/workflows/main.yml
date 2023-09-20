@@ -3,11 +3,11 @@ name: Deploy Docker
 # Run workflow on tags starting with v (eg. v2, v1.2.0)
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - main
 
 jobs:
-  Deploy:
+  build-deploy~:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
