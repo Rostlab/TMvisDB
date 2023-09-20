@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  build-deploy~:
+  build-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -22,8 +22,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags:
-            - "registry.rostlab.org/rostlab/tmvisdb:${{ github.ref }}"
-            - "registry.rostlab.org/rostlab/tmvisdb:latest"
+          tags: "registry.rostlab.org/rostlab/tmvisdb:${{ github.ref }}, registry.rostlab.org/rostlab/tmvisdb:latest"
           build-args:
             - "GIT_HASH=${{ GITHUB_SHA }}"
