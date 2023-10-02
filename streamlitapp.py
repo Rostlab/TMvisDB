@@ -39,7 +39,7 @@ if st.session_state.usg_stats:
     def init_connection():
         return pymongo.MongoClient(
             host=os.environ.get("TMVIS_MONGO_HOST", "localhost"),
-            port=os.environ.get("TMVIS_MONGO_PORT", 27017),
+            port=int(os.environ.get("TMVIS_MONGO_PORT", 27017)),
             username=os.environ.get("TMVIS_MONGO_USERNAME", ""),
             password=os.environ.get("TMVIS_MONGO_PASSWORD", ""),
             authSource=os.environ.get("TMVIS_MONGO_DB", "admin"),
