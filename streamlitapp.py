@@ -1,62 +1,109 @@
 import os
-
 import streamlit as st
 import pymongo
+import logging
 from pymongo.errors import ConnectionFailure
 import pandas as pd
 
 from app import faq, table, overview, visualization, about, sidebar, header
+from utils import db, api
+from utils.protein_info import ProteinInfo
 
-st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
+
+def collect_and_display_protein_info(db_conn, selected_id):
+    uniprot_acc_type = api.check_input_format(selected_id)
+
+    if uniprot_acc_type == "unknown":
+        st.error(
+            "The input format of your selected ID ** "
+            + selected_id
+            + " ** is not correct.",
+            icon="🚨",
+        )
+
+        return
+
+    protein_info: ProteinInfo = ProteinInfo.collect_for_id(
+        db_conn, selected_id, uniprot_acc_type
+    )
+    if not protein_info.has_annotations:
+        st.warning(
+            "We found no transmembrane annotation; neither predicted nor in UniProt or TmAlphaFold.",  # noqa: E501
+            icon="🚨",
+        )
+
+    if protein_info.has_annotations and protein_info.uniprot_accession is not None:
+        st.warning(
+            f"We could not find a protein in UniProtKB/TrEMBL matching your ID: {selected_id}."  # noqa: E501
+        )
+
+    # get and protein structure
+    if protein_info.sequence is not None:
+        if protein_info.uniprot_accession != protein_info.uniprot_name:
+            st.write(
+                "Displaying protein with UniProt accession number: ",
+                protein_info.uniprot_accession,
+                " and UniProt entry name:",
+                protein_info.uniprot_name,
+            )
+        else:
+            st.write("Displaying protein with ID: ", protein_info.uniprot_accession)
+
+    return protein_info
 
 
-####################################################################
-## Usage statistics
-if "usg_stats" not in st.session_state:
-    st.session_state.usg_stats = False
+if __name__ == "__main__":
+    st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
 
-if not st.session_state.usg_stats:
-    warn = st.warning(
+    logging.basicConfig(level=logging.DEBUG)
+
+
+# Check if the user has acknowledged the usage statistics warning
+if "user_acknowledged_stats" not in st.session_state:
+    st.session_state.user_acknowledged_stats = False
+
+# Display the usage statistics warning if not acknowledged
+if not st.session_state.user_acknowledged_stats:
+    stats_warning_message = st.warning(
         "Welcome to TMvisDB. The authors of TMvisDB opted out of gathering any usage summary statistics.  \n"
         "However, this web application is implemented with Streamlit. "
         "Please familiarize yourself with [Streamlit's privacy policy](https://streamlit.io/privacy-policy) before proceeding. "
         "The authors of TMvisDB have no insight into or control over Streamlit's data collection process and, thus, cannot accept any liability for said process.",
         icon="🚨",
     )
-    placeholder_button = st.empty()
-    user_stats = placeholder_button.button("Click here to continue to TMvisDB.")
-    if user_stats:
-        st.session_state.usg_stats = True
-        placeholder_button.empty()
-        warn.empty()
-####################################################################
+    continue_button_placeholder = st.empty()
+    user_clicked_continue = continue_button_placeholder.button(
+        "Click here to continue to TMvisDB."
+    )
+    if user_clicked_continue:
+        st.session_state.user_acknowledged_stats = True
+        continue_button_placeholder.empty()
+        stats_warning_message.empty()
 
-if st.session_state.usg_stats:
-    ####################################################################
-    ## Initialize connection to DB ##
-    # Uses st.experimental_singleton to only run once.
-    @st.cache_resource
-    def init_connection():
-        return pymongo.MongoClient(
-            host=os.environ.get("TMVIS_MONGO_HOST", "localhost"),
-            port=int(os.environ.get("TMVIS_MONGO_PORT", 27017)),
-            username=os.environ.get("TMVIS_MONGO_USERNAME", ""),
-            password=os.environ.get("TMVIS_MONGO_PASSWORD", ""),
-            authSource=os.environ.get("TMVIS_MONGO_DB", "admin"),
-            appname="TMvis Frontend",
-        )
 
-    client = init_connection()
+# If the user acknowledged the warning, initialize the database connection
+if st.session_state.user_acknowledged_stats:
+    # Function to initialize the MongoDB connection
+
+    client = db.init_connection()
+
+    # Attempt to connect to the database and test the connection
+    db_conn = None
     try:
-        # The ismaster command is cheap and does not require auth.
         client.admin.command("ismaster")
-        db = client.microscope.tmvis
-    except ConnectionFailure:
+        db_conn = client.microscope
+    except pymongo.errors.ServerSelectionTimeoutError:
+        logging.error("Could not connect to MongoDB. Server selection timed out.")
+    except pymongo.errors.ConnectionFailure:
+        logging.error("Failed to connect to MongoDB.")
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+
+    if db_conn is None:
         st.error(
             "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: tmvisdb@rostlab.org",
             icon="🚨",
         )
-        db = 0
 
     ## Initialize session ##
     if "rndm" not in st.session_state:
@@ -68,9 +115,6 @@ if st.session_state.usg_stats:
     if "txt" not in st.session_state:
         st.session_state.txt = ""
 
-    ####################################################################
-
-    ####################################################################
     ## Sidebar ##
     [
         selected_organismid,
@@ -84,28 +128,20 @@ if st.session_state.usg_stats:
     ] = sidebar.filters()
     [selected_id, style, color_prot, spin] = sidebar.vis()
     sidebar.end()
-    ####################################################################
 
-    ####################################################################
     ## Header ##
     header.title()
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         ["Overview", "Database", "Visualization", "FAQ", "About"]
     )
 
-    ####################################################################
-
-    ####################################################################
     ## Overview ##
     with tab1:
         overview.intro()
 
-    ####################################################################
-
-    ####################################################################
     ## Database ##
     with tab2:  #
-        if db == 0:
+        if db_conn is None:
             st.error(
                 "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: tmvisdb@rostlab.org",
                 icon="🚨",
@@ -117,14 +153,14 @@ if st.session_state.usg_stats:
                 st.session_state.filt = False
                 st.session_state.txt = "The table below shows a random selection. To personalize your selection, use the sidebar filters. (Note: Your current random selection will not be saved after reloading.)"
                 with st.spinner("Loading your data"):
-                    df = table.get_random(db, 50)
+                    df = db.get_random_data(db_conn, selected_limit)
                     st.session_state.tbl = df
                 st.session_state.rndm = False
                 st.experimental_rerun()
 
             if st.session_state.filt:
                 st.session_state.rndm = False
-                query_tbl = table.query(
+                query_form = db.construct_query(
                     selected_organismid,
                     selected_domain,
                     selected_kingdom,
@@ -134,7 +170,7 @@ if st.session_state.usg_stats:
                 )
 
                 with st.spinner("Loading your data"):
-                    df = table.get_data_tbl(db, query_tbl, selected_limit)
+                    df = db.get_filtered_data(db_conn, query_form, selected_limit)
 
                     st.session_state.txt = (
                         "The table below shows your personalized selection: "
@@ -160,7 +196,7 @@ if st.session_state.usg_stats:
             else:
                 # Print results
                 # st.write(table.query(selected_organismid, selected_domain, selected_kingdom, selected_type, selected_sp, selected_length))
-                if st.session_state.tbl.empty:
+                if st.session_state.tbl is None:
                     st.error(
                         "There are no entries in TMvisDB for your selection: topology ("
                         + selected_type
@@ -203,38 +239,38 @@ if st.session_state.usg_stats:
                         st.session_state.tbl["UniProt ID"],
                         0,
                     )
-                    visualization.vis(db, selected_dfid, style, color_prot, spin)
+                    protein_info = collect_and_display_protein_info(
+                        db_conn, selected_id
+                    )
+                    visualization.create_visualization_for_id(
+                        protein_info, style, color_prot, spin
+                    )
 
-    ####################################################################
-
-    ####################################################################
     ## 3D vis ##
     with tab3:
-        if db == 0:
+        if db_conn is None:
             st.error(
                 "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: tmvisdb@rostlab.org",
                 icon="🚨",
             )
         else:
             try:
-                visualization.vis(db, selected_id, style, color_prot, spin)
-            except:
+                protein_info = collect_and_display_protein_info(db_conn, selected_id)
+                visualization.create_visualization_for_id(
+                    protein_info, style, color_prot, spin
+                )
+            except Exception as e:
+                logging.error(f"An error occurred: {e}")
                 st.error(
                     "Sorry, we could not visualize your selected protein. Please contact us, so we can help you with your search.",
                     icon="🚨",
                 )
             st.markdown("---")
 
-    ####################################################################
-
-    ####################################################################
     ## FAQ ##
     with tab4:
         faq.quest()
 
-    ####################################################################
-
-    ####################################################################
     ## About ##
     with tab5:
         about.references()

@@ -6,6 +6,8 @@ import pymongo
 import pandas as pd
 import numpy as np
 
+from .protein_info import MembraneAnnotation
+
 FIELDS = {
     "_id": "UniProt ID",
     "sequence": "Sequence",
@@ -20,25 +22,6 @@ FIELDS = {
 }
 
 DATA_FORM = {elem: 1 for elem in FIELDS}
-
-
-@dataclass
-class MembraneAnnotation:
-    tmbed_annotation: list[str] = None
-    topdb_annotation: list[str] = None
-    membdb_annotation: list[str] = None
-
-    @property
-    def has_tmbed(self):
-        return self.tmbed_annotion is not None
-
-    @property
-    def has_topdb(self):
-        return self.tobdb_annotion is not None
-
-    @property
-    def has_membranome(self):
-        return self.membdb_annotion is not None
 
 
 def construct_query(
@@ -116,15 +99,13 @@ def get_random_data(db_conn, sample_size: int):
         ]
     )
 
-    logging.debug(items)
-
     df = pd.json_normalize(items)
     df = df.rename(columns=FIELDS)
     return df
 
 
 def get_filtered_data(db_conn, query: dict[str, str | int], sample_size: int):
-    items = db_conn.find(query, DATA_FORM).limit(sample_size)
+    items = db_conn.tmvis.find(query, DATA_FORM).limit(sample_size)
     df = pd.json_normalize(items)
 
     if df.empty:  # No items matching criteria
@@ -143,7 +124,48 @@ def get_filtered_data(db_conn, query: dict[str, str | int], sample_size: int):
     return df
 
 
-def construct_membranome_annotation(item: dict[str, str | dict[str, str]]):
+def get_data_for_id(db_conn, selected_id: str):
+    query = {"_id": selected_id}
+    return get_filtered_data(db_conn, query, sample_size=1)
+
+
+def get_membrane_annotation_for_id(db_conn, selected_id: str):
+    query = {"_id": selected_id}
+    membranome_form = {
+        "seq_length": 1,
+        "predictions": 1,
+        "topdb.TopDB_Entry": 1,
+        "membranomedb.tm_seq_start": 1,
+        "membranomedb.tm_seq_end": 1,
+    }
+
+    tmbed_annotation: list[str] = None
+    topdb_annotation: list[str] = None
+    membdb_annotation: list[str] = None
+
+    item = list(db_conn.tmvis.find(query, membranome_form))
+
+    if not item:
+        raise ValueError("Item not found in database.")
+
+    # TMbed prediction
+    tmbed_annotation = list(item[0]["predictions"]["transmembrane"])
+
+    # TopDB annotation
+    topdb_annotation = construct_topdb_annotation(item[0])
+
+    # Membranome annotation
+    membdb_annotation = construct_membranome_annotation(item[0])
+
+    return MembraneAnnotation(tmbed_annotation, topdb_annotation, membdb_annotation)
+
+
+def construct_topdb_annotation(item: None | dict[str, str | dict[str, str]]):
+    topdb_value = item.get("topdb", {}).get("TopDB_Entry", None)
+    return None if not topdb_value else list(topdb_value)
+
+
+def construct_membranome_annotation(item: None | dict[str, str | dict[str, str]]):
     """
     Extracts Membranome data from the given item.
     """
@@ -167,33 +189,3 @@ def construct_membranome_annotation(item: dict[str, str | dict[str, str]]):
 #     "If an AlphaFold structure is displayed below, it is without transmembrane topology annotation.",
 #     icon="🚨",
 # )
-
-
-def get_membrane_annotation_for_id(db, selected_id):
-    query = {"_id": selected_id}
-    membranome_form = {
-        "seq_length": 1,
-        "topdb.TopDB_Entry": 1,
-        "membranomedb.tm_seq_start": 1,
-        "membranomedb.tm_seq_end": 1,
-    }
-
-    tmbed_annotation: list[str] = None
-    topdb_annotation: list[str] = None
-    membdb_annotation: list[str] = None
-
-    item = list(db.find(query, membranome_form))
-
-    if not item:
-        raise ValueError("Item not found in database.")
-
-    # TMbed prediction
-    tmbed_annotation = list(item[0]["predictions"]["transmembrane"])
-
-    # TopDB annotation
-    topdb_annotation = list(item[0].get("topdb", {}).get("TopDB_Entry", None))
-
-    # Membranome annotation
-    membdb_annotation = construct_membranome_annotation(item[0])
-
-    return MembraneAnnotation(tmbed_annotation, topdb_annotation, membdb_annotation)
