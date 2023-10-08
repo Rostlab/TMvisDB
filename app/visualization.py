@@ -57,6 +57,7 @@ def display_membrane_annotation(protein_info: ProteinInfo):
     """Visualizes membrane annotations using the provided data."""
 
     st.write("Membrane Annotations")
+    logging.debug(protein_info.annotations.has_annotations)
     if not protein_info.annotations.has_annotations:
         st.caption("Could not find any annotations for this protein.")
         return

@@ -3,6 +3,7 @@
 
 
 from dataclasses import dataclass, field, fields
+import logging
 
 import pandas as pd
 
@@ -51,7 +52,7 @@ class MembraneAnnotation:
     @property
     def __annotation_fields(self):
         return [
-            annotation.name
+            annotation
             for annotation in fields(self)
             if "col_name" in annotation.metadata
         ]
@@ -59,11 +60,8 @@ class MembraneAnnotation:
     @property
     def has_annotations(self):
         return any(
-            [
-                getattr(self, property.name)
-                for property in fields(self)
-                if property.name.startswith("has_an_")
-            ]
+            getattr(self, f"has_an_{annotation.name}")
+            for annotation in self.__annotation_fields
         )
 
     @property

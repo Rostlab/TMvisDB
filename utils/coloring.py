@@ -128,7 +128,7 @@ def alphafold_legend_coloring(value_name):
     return f"background-color: {color}"
 
 
-def map_annotation_to_color(pred):
+def map_annotation_to_color(annotation: list[str]):
     atom_color = dict()
     color_map = {
         "S": ColorCode.SIGNAL_PEPTIDE.value,
@@ -138,6 +138,8 @@ def map_annotation_to_color(pred):
         "b": ColorCode.BETA_DARK.value,
         "i": ColorCode.INSIDE.value,
     }
-    for nr, res_type in enumerate(pred):
-        atom_color[nr] = color_map.get(res_type, ColorCode.OUTSIDE.value)
+    for nr, res_type in enumerate(annotation):
+        atom_color[nr] = "".join(
+            color_map.get(res_type, ColorCode.OUTSIDE.value).split()
+        )
     return atom_color

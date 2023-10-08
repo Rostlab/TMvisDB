@@ -44,7 +44,7 @@ def collect_and_display_protein_info(db_conn, selected_id):
             icon="🚨",
         )
 
-    if protein_info.has_annotations and protein_info.uniprot_accession is not None:
+    if protein_info.has_annotations and protein_info.uniprot_accession is None:
         st.warning(
             f"We could not find a protein in UniProtKB/TrEMBL matching your ID: {selected_id}."  # noqa: E501
         )
