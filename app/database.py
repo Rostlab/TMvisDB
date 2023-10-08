@@ -30,25 +30,24 @@ def show_table(df: pd.DataFrame):
     )  # , update_mode='manual')#theme='alpine',
 
 
-def display_random_data(db_conn, num_elements):
-    logging.debug(num_elements)
+@st.cache_data(ttl=600)
+def display_random_data(db_conn, db_filter: DBFilter):
     with st.spinner("Loading random data..."):
-        st.session_state.tbl = db.get_random_data(db_conn, num_elements)
-    st.session_state.txt = "The table below shows a random selection. Use the sidebar filters for a personalized selection."  # noqa: E501
-    st.session_state.rndm = False
-    st.experimental_rerun()
+        st.session_state.data = db.get_random_data(db_conn, db_filter.num_sequences)
+    st.session_state.user_display = "The table below shows a random selection. Use the sidebar filters for a personalized selection."  # noqa: E501
+    st.rerun()
 
 
+@st.cache_data(ttl=600)
 def display_filtered_data(db_conn, db_filter: DBFilter):
     query_form = db_filter.construct_query()
     with st.spinner("Loading filtered data..."):
-        st.session_state.tbl = db.get_filtered_data(
+        st.session_state.data = db.get_filtered_data(
             db_conn, query_form, db_filter.num_sequences
         )
-    st.session_state.txt = (
-        f"The table below shows your personalized selection: topology ({db_filter.selected_type}),"  # noqa: E501
-        f"taxonomy (Organism ID: {db_filter.selected_organismid}, Domain: {db_filter.selected_domain}, Kingdom: {db_filter.selected_kingdom}), "  # noqa: E501
-        f"length {str(db_filter.selected_length)}. For a random selection use the sidebar button."  # noqa: E501
-    )
-    st.session_state.filt = False
-    st.experimental_rerun()
+        st.session_state.user_display = (
+            f"The table below shows your personalized selection: topology ({db_filter.topology}),"  # noqa: E501
+            f"taxonomy (Organism ID: {db_filter.organism_id}, Domain: {db_filter.domain}, Kingdom: {db_filter.kingdom}), "  # noqa: E501
+            f"length {str(db_filter.sequence_lengths)}. For a random selection use the sidebar button."  # noqa: E501
+        )
+    st.rerun()

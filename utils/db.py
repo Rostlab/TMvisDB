@@ -108,10 +108,10 @@ class Bacteria(Kingdom):
 AllKingdoms = Kingdom(
     "AllKingdoms",
     {
+        "ALL": "All",
         **{item.name: item.value for item in Archaea if item.name != "ALL"},
         **{item.name: item.value for item in Eukaryota if item.name != "ALL"},
         **{item.name: item.value for item in Bacteria if item.name != "ALL"},
-        "ALL": "All",
     },
 )
 
@@ -171,7 +171,6 @@ class DBFilter:
                 "$lt": self.sequence_lengths[1],
             }
 
-        # add topology filter if selected_type not "All"
         if self.topology == Topology.BOTH or self.topology == Topology.ALL:
             query_form["annotations.tm_categorical"] = [1, 1, sp]
         elif self.topology == Topology.ALPHA_HELIX:
@@ -179,7 +178,10 @@ class DBFilter:
         elif self.topology == Topology.BETA_STRAND:
             query_form["annotations.tm_categorical"] = [0, 1, sp]
 
-        if self.taxa_selection == TaxaSelectionCriterion.ORGANISM:
+        if (
+            self.taxa_selection == TaxaSelectionCriterion.ORGANISM
+            and self.organism_id is not None
+        ):
             query_form["organism_id"] = int(self.organism_id)
 
         else:
@@ -187,9 +189,10 @@ class DBFilter:
                 query_form["uptaxonomy.Domain"] = self.domain.value
 
             kingdom_type = get_kingdom_for_domain(self.domain)
-            if self.domain != kingdom_type.ALL:
-                query_form["uptaxonomy.Kingdom"] = self.domain.value
+            if self.kingdom != kingdom_type.ALL:
+                query_form["uptaxonomy.Kingdom"] = self.kingdom.value
 
+        logging.debug(query_form)
         return query_form
 
 
@@ -202,7 +205,7 @@ def init_connection():
 
     # Log the connection parameters (excluding password for security reasons)
     logging.debug(
-        f"Connecting to MongoDB with host: {host}, port: {port}, username: {username}, authSource: {auth_source}"
+        f"Connecting to MongoDB with host: {host}, port: {port}, username: {username}, authSource: {auth_source}"  # noqa: E501
     )
 
     return pymongo.MongoClient(

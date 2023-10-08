@@ -10,15 +10,13 @@ from st_aggrid import AgGrid
 from utils.coloring import (
     color_prediction,
     color_code_af,
-    color_code_pred,
+    color_prediction,
     color_expl_af,
     color_expl_tmbed,
     tm_color_structure,
 )
 
-from utils import api
-from utils import db
-from utils.protein_info import ProteinInfo, MembraneAnnotation
+from utils.protein_info import ProteinInfo
 
 
 def display_legend(color_scheme_name, has_no_pred):
@@ -27,7 +25,7 @@ def display_legend(color_scheme_name, has_no_pred):
     if color_scheme_name == "Alphafold pLDDT score" or has_no_pred:
         st.write(color_code_af.style.applymap(color_expl_af, subset=["pLDDT score"]))
     else:
-        st.write(color_code_pred.style.applymap(color_expl_tmbed, subset=["Color"]))
+        st.write(color_expl_tmbed.style.applymap(color_expl_tmbed, subset=["Color"]))
         st.caption(
             "Inside/outside annotations of TMbed are not optimized and must be interpreted with caution."  # noqa: E501
         )

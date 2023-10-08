@@ -9,6 +9,7 @@ from app import database, faq, overview, visualization, about, sidebar, header
 from utils import db, api
 from utils.db import DBFilter
 from utils.protein_info import ProteinInfo
+from utils.coloring import Style
 
 
 def db_error():
@@ -87,6 +88,7 @@ def acknowledge_statistics_warning():
             stats_warning_message.empty()
 
 
+@st.cache_resource
 def initialize_database_connection():
     """
     Initialize the MongoDB connection.
@@ -116,13 +118,19 @@ def initialize_session_state():
     """
     Initialize the Streamlit session state variables.
     """
-    default_state = {"rndm": False, "filt": False, "tbl": pd.DataFrame(), "txt": ""}
+    default_state = {
+        "data": pd.DataFrame(),
+        "user_display": "",
+        "filter": DBFilter(),
+        "visualization_style": Style(),
+        "protein_info": None,
+    }
     for key, value in default_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
 
 
-def handle_database_tab(db_conn, db_filter: DBFilter):
+def handle_database_tab(db_conn):
     """
     Handle the logic for the 'Database' tab.
     """
@@ -130,14 +138,22 @@ def handle_database_tab(db_conn, db_filter: DBFilter):
         db_error()
         return
 
-    if st.session_state.rndm:
-        database.display_random_data(db_conn, db_filter.num_sequences)
+    db_filter = st.session_state.filter
 
-    elif st.session_state.filt:
+    if db_filter.random_selection:
+        database.display_random_data(db_conn, db_filter)
+    else:
         database.display_filtered_data(db_conn, db_filter)
 
     if not st.session_state.tbl.empty:
-        database.show_table(st.session_state.tbl)
+        database.show_table(st.session_state.data)
+        st.download_button(
+            "Download selection",
+            database.convert_df(st.session_state.data),
+            "file.csv",
+            "text/csv",
+            key="download-csv",
+        )
 
 
 def show_3d_visualization(db_conn, selected_id, style, color_prot, spin):
@@ -171,9 +187,7 @@ def main():
         initialize_session_state()
 
         # Sidebar
-        db_filters = sidebar.filters()
-        selected_id, style, color_prot, spin = sidebar.vis()
-        sidebar.end()
+        sidebar.display_sidebar()
 
         # Header
         header.title()
@@ -186,13 +200,13 @@ def main():
             overview.intro()
 
         with tab_database:
-            handle_database_tab(db_conn, db_filters)
+            handle_database_tab(db_conn)
 
             st.markdown("---")
-            if not st.session_state.tbl.empty:
+            if not st.session_state.data.empty:
                 selected_id = st.selectbox(
                     "Choose an ID to visualize predicted transmembrane topology below",
-                    st.session_state.tbl["UniProt ID"],
+                    st.session_state.data["UniProt ID"],
                     0,
                 )
                 show_3d_visualization(db_conn, selected_id, style, color_prot, spin)
