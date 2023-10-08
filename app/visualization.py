@@ -8,24 +8,31 @@ from st_aggrid import AgGrid
 
 
 from utils.coloring import (
-    color_prediction,
-    color_code_af,
-    color_prediction,
-    color_expl_af,
-    color_expl_tmbed,
-    tm_color_structure,
+    ALPHAFOLD_LEGEND_DF,
+    ANNOTATION_LEGEND_DF,
 )
 
+from utils import coloring
+
 from utils.protein_info import ProteinInfo
+from utils.coloring import Style, ColorScheme
 
 
-def display_legend(color_scheme_name, has_no_pred):
+def display_legend(color_scheme: ColorScheme, has_no_pred):
     """Displays color code explanation based on the provided color protocol."""
     st.write("Color code")
-    if color_scheme_name == "Alphafold pLDDT score" or has_no_pred:
-        st.write(color_code_af.style.applymap(color_expl_af, subset=["pLDDT score"]))
+    if color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE or has_no_pred:
+        st.write(
+            ALPHAFOLD_LEGEND_DF.style.applymap(
+                coloring.alphafold_legend_coloring, subset=["pLDDT score"]
+            )
+        )
     else:
-        st.write(color_expl_tmbed.style.applymap(color_expl_tmbed, subset=["Color"]))
+        st.write(
+            ANNOTATION_LEGEND_DF.style.applymap(
+                coloring.annotation_legend_coloring, subset=["Color"]
+            )
+        )
         st.caption(
             "Inside/outside annotations of TMbed are not optimized and must be interpreted with caution."  # noqa: E501
         )
@@ -57,7 +64,7 @@ def display_membrane_annotation(protein_info: ProteinInfo):
     pred_table = protein_info.annotations.construct_annotation_table(
         protein_info.sequence
     )
-    styled_table = pred_table.T.style.apply(color_prediction, axis=0)
+    styled_table = pred_table.T.style.apply(coloring.color_prediction, axis=0)
     st.write(styled_table)
 
     st.caption(
@@ -75,24 +82,21 @@ def display_other_annotations(protein_info: ProteinInfo):
     )
 
 
-def display_protein_structure(
-    protein_info: ProteinInfo, color_scheme_name: str, should_spin: str, style: str
-):
+def display_protein_structure(protein_info: ProteinInfo, style: Style):
     structure = protein_info.structure
-
     view = py3Dmol.view(js="https://3dmol.org/build/3Dmol.js")
     view.addModelsAsFrames(structure)
     view.setBackgroundColor("#262730")
 
     # add color
     if (
-        color_scheme_name == "Alphafold pLDDT score"
+        style.color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE
         or not protein_info.annotations.has_an_predicted
     ):
         view.setStyle(
             {"model": -1},
             {
-                style: {
+                style.visualization_style.value: {
                     "colorscheme": {
                         "prop": "b",
                         "gradient": "roygb",
@@ -103,12 +107,17 @@ def display_protein_structure(
             },
         )
     else:
-        tm_color = tm_color_structure(protein_info.annotations.predicted)
+        tm_color = coloring.map_annotation_to_color(protein_info.annotations.predicted)
         view.setStyle(
-            {"model": -1}, {style: {"colorscheme": {"prop": "resi", "map": tm_color}}}
+            {"model": -1},
+            {
+                style.visualization_style.value: {
+                    "colorscheme": {"prop": "resi", "map": tm_color}
+                }
+            },
         )
 
-    view.spin(should_spin)
+    view.spin(style.spin)
 
     view.zoomTo()
     showmol(view, height=500, width=800)
@@ -116,16 +125,9 @@ def display_protein_structure(
 
 def create_visualization_for_id(
     protein_info: ProteinInfo,
-    style_name_3d: str,
-    color_scheme_name: str,
-    should_spin: bool,
+    style: Style,
 ):
-    display_protein_structure(
-        protein_info,
-        color_scheme_name=color_scheme_name,
-        should_spin=should_spin,
-        style=style_name_3d,
-    )
+    display_protein_structure(protein_info, style)
 
     st.markdown("---")
 
@@ -135,7 +137,7 @@ def create_visualization_for_id(
 
     # Explain colors used in the visualization
     display_legend(
-        color_scheme_name=color_scheme_name,
+        color_scheme=style.color_scheme,
         has_no_pred=not protein_info.annotations.has_an_predicted,
     )
 

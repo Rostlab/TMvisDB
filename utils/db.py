@@ -150,8 +150,8 @@ DATA_FORM = {elem: 1 for elem in FIELDS}
 
 @dataclass
 class DBFilter:
-    taxa_selection: TaxaSelectionCriterion = TaxaSelectionCriterion.ORGANISM
-    organism_id: int = 0
+    taxonomy_selection: TaxaSelectionCriterion = TaxaSelectionCriterion.ORGANISM
+    organism_id: int | None = 9606
     domain: Domain = Domain.ALL
     kingdom: Kingdom = AllKingdoms.ALL
     topology: Topology = Topology.ALL
@@ -171,15 +171,17 @@ class DBFilter:
                 "$lt": self.sequence_lengths[1],
             }
 
-        if self.topology == Topology.BOTH or self.topology == Topology.ALL:
+        if self.topology == Topology.BOTH:
             query_form["annotations.tm_categorical"] = [1, 1, sp]
         elif self.topology == Topology.ALPHA_HELIX:
             query_form["annotations.tm_categorical"] = [1, 0, sp]
         elif self.topology == Topology.BETA_STRAND:
             query_form["annotations.tm_categorical"] = [0, 1, sp]
+        elif self.topology == Topology.ALL:
+            query_form["annotations.tm_categorical"] = [1, 1, sp]
 
         if (
-            self.taxa_selection == TaxaSelectionCriterion.ORGANISM
+            self.taxonomy_selection == TaxaSelectionCriterion.ORGANISM
             and self.organism_id is not None
         ):
             query_form["organism_id"] = int(self.organism_id)

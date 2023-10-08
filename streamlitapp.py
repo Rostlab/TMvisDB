@@ -8,6 +8,7 @@ import pandas as pd
 from app import database, faq, overview, visualization, about, sidebar, header
 from utils import db, api
 from utils.db import DBFilter
+from utils.api import UniprotACCType
 from utils.protein_info import ProteinInfo
 from utils.coloring import Style
 
@@ -24,7 +25,7 @@ def db_error():
 def collect_and_display_protein_info(db_conn, selected_id):
     uniprot_acc_type = api.check_input_format(selected_id)
 
-    if uniprot_acc_type == "unknown":
+    if uniprot_acc_type == UniprotACCType.UNKNOWN:
         st.error(
             "The input format of your selected ID ** "
             + selected_id
@@ -123,11 +124,19 @@ def initialize_session_state():
         "user_display": "",
         "filter": DBFilter(),
         "visualization_style": Style(),
-        "protein_info": None,
+        "visualization_protein_info": None,
     }
     for key, value in default_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def get_initial_protein_info(_db_conn):
+    selected_id = getattr(st.session_state, "selected_id", "Q9NVH1").strip().upper()
+    input_format = api.check_input_format(selected_id)
+    protein_info = ProteinInfo.collect_for_id(_db_conn, selected_id, input_format)
+    return protein_info
 
 
 def handle_database_tab(db_conn):
@@ -145,7 +154,7 @@ def handle_database_tab(db_conn):
     else:
         database.display_filtered_data(db_conn, db_filter)
 
-    if not st.session_state.tbl.empty:
+    if not st.session_state.data.empty:
         database.show_table(st.session_state.data)
         st.download_button(
             "Download selection",
@@ -156,24 +165,22 @@ def handle_database_tab(db_conn):
         )
 
 
-def show_3d_visualization(db_conn, selected_id, style, color_prot, spin):
+def show_3d_visualization(db_conn, protein_info: ProteinInfo, style: Style):
     """
     Display 3D visualization of the protein.
     """
-    if db_conn is not None:
+    if db_conn is None:
         db_error()
         return
 
-    try:
-        protein_info = collect_and_display_protein_info(db_conn, selected_id)
-        visualization.create_visualization_for_id(protein_info, style, color_prot, spin)
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        st.error(
-            "Sorry, we could not visualize your selected protein. Please contact us, so we can help you with your search.",  # noqa: E501
-            icon="🚨",
-        )
-    st.markdown("---")
+    # try:
+    visualization.create_visualization_for_id(protein_info, style)
+    # except Exception as e:
+    #     logging.error(f"An error occurred: {e}")
+    #     st.error(
+    #         "Sorry, we could not visualize your selected protein. Please contact us, so we can help you with your search.",  # noqa: E501
+    #         icon="🚨",
+    #     )
 
 
 def main():
@@ -184,7 +191,13 @@ def main():
 
     if st.session_state.user_acknowledged_stats:
         db_conn = initialize_database_connection()
+
         initialize_session_state()
+
+        if st.session_state.visualization_protein_info is None:
+            st.session_state.visualization_protein_info = get_initial_protein_info(
+                db_conn
+            )
 
         # Sidebar
         sidebar.display_sidebar()
@@ -204,15 +217,27 @@ def main():
 
             st.markdown("---")
             if not st.session_state.data.empty:
-                selected_id = st.selectbox(
+                local_id = st.selectbox(
                     "Choose an ID to visualize predicted transmembrane topology below",
                     st.session_state.data["UniProt ID"],
                     0,
                 )
-                show_3d_visualization(db_conn, selected_id, style, color_prot, spin)
+
+                with st.spinner("Loading Protein Data"):
+                    protein_info = collect_and_display_protein_info(db_conn, local_id)
+                    if protein_info is not None:
+                        show_3d_visualization(
+                            db_conn, protein_info, st.session_state.visualization_style
+                        )
+            st.markdown("---")
 
         with tab_visualization:
-            show_3d_visualization(db_conn, selected_id, style, color_prot, spin)
+            show_3d_visualization(
+                db_conn,
+                st.session_state.visualization_protein_info,
+                st.session_state.visualization_style,
+            )
+            st.markdown("---")
 
         with tab_faq:
             faq.quest()

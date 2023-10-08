@@ -36,7 +36,7 @@ class ColorCode(Enum):
 # Dataclass for Style
 @dataclass
 class Style:
-    style: ProteinStyle = ProteinStyle.CARTOON
+    visualization_style: ProteinStyle = ProteinStyle.CARTOON
     color_scheme: ColorScheme = ColorScheme.TRANSMEMBRANE_PREDICTION
     spin: bool = False
 
@@ -47,48 +47,48 @@ ANNOTATION_LEGEND_DF = pd.DataFrame.from_records(
             "Topology": "Helix",
             "Abbreviation": "H",
             "Orientation": "IN-->OUT",
-            "Color": ColorCode.HELIX_LIGHT,
+            "Color": ColorCode.HELIX_LIGHT.value,
         },
         {
             "Topology": "Helix",
             "Abbreviation": "h",
             "Orientation": "OUT-->IN",
-            "Color": ColorCode.HELIX_DARK,
+            "Color": ColorCode.HELIX_DARK.value,
         },
         {
             "Topology": "Beta-Strand",
             "Abbreviation": "B",
             "Orientation": "IN-->OUT",
-            "Color": ColorCode.BETA_LIGHT,
+            "Color": ColorCode.BETA_LIGHT.value,
         },
         {
-            "Topoloy": "Beta-Strand",
+            "Topology": "Beta-Strand",
             "Abbreviation": "b",
             "Orientation": "OUT-->IN",
-            "Color": ColorCode.BETA_DARK,
+            "Color": ColorCode.BETA_DARK.value,
         },
         {
             "Topology": "inside",
             "Abbreviation": "i",
             "Orientation": "inside",
-            "Color": ColorCode.INSIDE,
+            "Color": ColorCode.INSIDE.value,
         },
         {
             "Topology": "outside",
             "Abbreviation": "o",
             "Orientation": "outside",
-            "Color": ColorCode.OUTSIDE,
+            "Color": ColorCode.OUTSIDE.value,
         },
         {
             "Topology": "Signal Peptide",
             "Abbreviation": "S",
             "Orientation": "NA",
-            "Color": ColorCode.SIGNAL_PEPTIDE,
+            "Color": ColorCode.SIGNAL_PEPTIDE.value,
         },
     ]
 )
 
-color_code_af = pd.DataFrame(
+ALPHAFOLD_LEGEND_DF = pd.DataFrame(
     [
         "Very low (pLDDT < 50)",
         "Low (70 > pLDDT > 50)",
@@ -113,22 +113,22 @@ def color_prediction(annotation_table):
     return [f"background-color: {''.join(color.split())}"] * len(annotation_table.index)
 
 
-def color_expl_tmbed(color_name):
-    return f"background-color: {''.join(color_name.split())}"
+def annotation_legend_coloring(value_name):
+    return f"background-color: {''.join(value_name.split())}"
 
 
-def color_expl_af(val):
+def alphafold_legend_coloring(value_name):
     color_map = {
         "Very low (pLDDT < 50)": ColorCode.VERY_LOW.value,
         "Low (70 > pLDDT > 50)": ColorCode.LOW.value,
         "Confident (90 > pLDDT > 70)": ColorCode.CONFIDENT.value,
         "Very high (pLDDT > 90)": ColorCode.VERY_HIGH.value,
     }
-    color = color_map.get(val)
+    color = color_map.get(value_name)
     return f"background-color: {color}"
 
 
-def tm_color_structure(pred):
+def map_annotation_to_color(pred):
     atom_color = dict()
     color_map = {
         "S": ColorCode.SIGNAL_PEPTIDE.value,

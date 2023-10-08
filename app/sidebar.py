@@ -33,7 +33,12 @@ def create_random_form():
 
 def create_filter_form():
     with sb.expander("Click here to access filters for TMvisDB."):
-        taxonomy_selection = st.radio("Select Taxonomy via", TaxaSelectionCriterion)
+        taxonomy_selection = st.radio(
+            "Select Taxonomy via",
+            TaxaSelectionCriterion,
+            format_func=lambda x: x.value,
+            key="taxonomy_selection",
+        )
 
         disable_domain = True
         if taxonomy_selection == TaxaSelectionCriterion.DOMAIN:
@@ -81,7 +86,7 @@ def create_filter_form():
             "Show sequences with signal peptides",
             value=False,
             help="TMbed predicts whether a sequence contains signal peptides. Change 'Filter by Transmembrane Topology' to access.",  # noqa: E501
-            disabled=(topology != Topology.ALL),
+            disabled=(topology == Topology.ALL),
             key="signal_peptide",
         )
 
@@ -107,7 +112,7 @@ def create_filter_form():
         st.button(
             "Apply filters",
             help="Click here to show your selection.",
-            on_click=handle_db_filters,
+            on_click=handle_db_filter,
         )
 
 
@@ -150,37 +155,43 @@ def end():
     st.sidebar.write("Source: [Github](https://github.com/rostlab/TMvisDB)")
 
 
-def handle_db_filters():
-    st.session_state.filters = DBFilter(
-        taxa_selection=st.session_state.taxonomy_selection,
-        sequence_lengths=st.session_state.sequence_lengths,
-        topology=st.session_state.topology,
-        organism_id=st.session_state.organism_id,
-        domain=st.session_state.domain,
-        kingdom=st.session_state.kingdom,
-        signal_peptide=st.session_state.signal_peptide,
-        num_sequences=st.session_state.num_sequences,
-    )
+def handle_db_filter():
+    attributes = [
+        "taxonomy_selection",
+        "sequence_lengths",
+        "topology",
+        "organism_id",
+        "domain",
+        "kingdom",
+        "signal_peptide",
+        "num_sequences",
+    ]
+    filter_kwargs = {
+        attr: getattr(st.session_state, attr)
+        for attr in attributes
+        if hasattr(st.session_state, attr)
+    }
+    st.session_state.filter = DBFilter(**filter_kwargs, random_selection=False)
 
 
 def handle_random_selection():
-    st.session_state.filters = DBFilter()
+    st.session_state.filter = DBFilter()
 
 
 def handle_vis_changes():
-    selected_id = st.session_state.selected_id
-    selected_id = selected_id.strip().upper()
-    input_format = api.get_input_type(selected_id)
+    selected_id = getattr(st.session_state, "selected_id", "Q9NVH1").strip().upper()
+    input_format = api.check_input_format(selected_id)
+    # TODO fix this
     protein_info = api.get_protein_info(selected_id, input_format)
-
-    style = Style(
-        style=st.session_state.style,
-        color_scheme=st.session_state.color_scheme,
-        spin=st.session_state.spin,
-    )
-
+    attributes = ["style", "color_scheme", "spin"]
+    style_kwargs = {
+        attr: getattr(st.session_state, attr)
+        for attr in attributes
+        if hasattr(st.session_state, attr)
+    }
+    style = Style(**style_kwargs)
     st.session_state.visualization_protein = protein_info
-    st.session_style.visualization_style = style
+    st.session_state.visualization_style = style
 
 
 def display_sidebar():

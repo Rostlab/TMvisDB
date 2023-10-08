@@ -138,7 +138,9 @@ class ProteinInfo:
         db_annotation.alphafold = alphafold_annotation
 
         sequence_info_df = db.get_data_for_id(db_conn, selected_id)
-        sequence, structure = api.get_af_structure(uniprot_accession)
+        sequence, structure = api.get_af_structure(
+            uniprot_accession if uniprot_accession is not None else selected_id
+        )
 
         return ProteinInfo(
             supplied_accession=selected_id,

@@ -12,9 +12,9 @@ UNIPROT_ID_RE = re.compile("^[A-Z0-9]{3,20}_[A-Z0-9]{3,20}$")
 
 
 class UniprotACCType(Enum):
-    uniprot_id = 0
-    uniprot_accession = 1
-    unknown = -1
+    UNIPROT_ID = 0
+    UNIPROT_NAME = 1
+    UNKNOWN = -1
 
 
 def check_input_format(selected_id):
@@ -24,11 +24,11 @@ def check_input_format(selected_id):
     """
     test_str = selected_id.upper()
     if UNIPROT_ID_RE.match(test_str):
-        return UniprotACCType.uniprot_id
+        return UniprotACCType.UNIPROT_ID
     elif ACCESSION_NUMBER_RE.match(test_str):
-        return UniprotACCType.uniprot_accession
+        return UniprotACCType.UNIPROT_NAME
     else:
-        return UniprotACCType.unknown
+        return UniprotACCType.UNKNOWN
 
 
 def get_af_structure(selected_id):
@@ -44,7 +44,7 @@ def get_af_structure(selected_id):
         afdb_file = urlopen(afdb_pdb_path).read().decode("utf-8")
         return seq, afdb_file
     except Exception as e:
-        st.error(f"Error fetching AlphaFold structure: {e}")
+        logging.error(f"Error fetching AlphaFold structure: {e}")
         return None, None
 
 
@@ -66,8 +66,6 @@ def get_uniprot_tmvec(selected_id, input_type):
         body = requests.get(url).json()
     except Exception as e:
         logging.error(f"Error contacting {url}: \n\t{e}")
-        # TODO
-        st.error(f"Something went wrong contacting Uniprot: {e}")
         return None, None, None, 0
 
     if body.get("results") and len(body["results"]) > 0:
@@ -101,8 +99,6 @@ def get_tmalphafold_annotation(up_name, seq_length):
         body = requests.get(url).json()
     except Exception as e:
         logging.error(f"Error contacting {url}: \n\t{e}")
-        # TODO
-        st.error(f"Something went wrong contacting TmAlphaFold: {e}")
         return None
 
     tmaf_tm_vec = ["*"] * seq_length
