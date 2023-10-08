@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 import os
 import logging
 
@@ -7,6 +8,129 @@ import pandas as pd
 import numpy as np
 
 from .protein_info import MembraneAnnotation
+
+
+# Options: Filter
+class Topology(Enum):
+    ALL = "All"
+    BOTH = "Both"
+    ALPHA_HELIX = "Alpha-helix"
+    BETA_STRAND = "Beta-strand"
+
+
+class TaxaSelectionCriterion(Enum):
+    ORGANISM = "Organism ID"
+    DOMAIN = "Domain/Kingdom"
+
+
+class Domain(Enum):
+    ALL = "All"
+    BACTERIA = "Bacteria"
+    EUKARYOTA = "Eukaryota"
+    ARCHAEA = "Archaea"
+    UNCLASSIFIED = "unclassified sequences"
+
+
+class Kingdom(Enum):
+    pass
+
+
+class Archaea(Kingdom):
+    ALL = "All Archaea"
+    ASGARD_GROUP = "Asgard group"
+    HYDROTHERMARCHAEOTA = "Candidatus Hydrothermarchaeota"
+    THERMOPLASMATOTA = "Candidatus Thermoplasmatota"
+    DPANN_GROUP = "DPANN group"
+    EURYARCHAEOTA = "Euryarchaeota"
+    TACK_GROUP = "TACK group"
+    ARCHA_INCERTAE_SEDIS = "Archaea incertae sedis"
+    UNCLASSIFIED_ARCHAEA = "unclassified Archaea"
+    ENVIRONMENTAL_SAMPLES = "environmental samples"
+
+
+class Eukaryota(Kingdom):
+    ALL = "All Eukaryota"
+    AMOEBOZOA = "Amoebozoa"
+    ANCYROMONADIDA = "Ancyromonadida"
+    APUSOZOA = "Apusozoa"
+    BREVITEA = "Breviatea"
+    CRUMS = "CRuMs"
+    CRYPTOPHYCEAE = "Cryptophyceae (cryptomonads)"
+    DISCOBA = "Discoba"
+    GLAUCOCYSTOPHYCEAE = "Glaucocystophyceae"
+    HAPTISTA = "Haptista"
+    HEMIMASTIGOPHORA = "Hemimastigophora"
+    MALAWIMONADIDA = "Malawimonadida"
+    METAMONADA = "Metamonada"
+    OPISTHOKONTA = "Opisthokonta"
+    RHODELPHEA = "Rhodelphea"
+    RHODOPHYTA = "Rhodophyta (red algae)"
+    SAR = "Sar"
+    VIRIDIPLANTAE = "Viridiplantae"
+    EUKARYOTA_INCERTAE_SEDIS = "Eukaryota incertae sedis"
+    UNCLASSIFIED_EUKARYOTES = "unclassified eukaryotes"
+    ENVIRONMENTAL_SAMPLES = "environmental samples"
+
+
+class Bacteria(Kingdom):
+    ALL = "All Bacteria"
+    ACIDOBACTERIA = "Acidobacteria"
+    AQUIFICAE = "Aquificae"
+    ATRIBACTEROA = "Atribacterota"
+    CALDISERICA_CRYOSERICOTA_GROUP = "Caldiserica/Cryosericota group"
+    CALDITRICHAEOTA = "Calditrichaeota"
+    CANDIDATUS_KRUMHOLZIBACTERIOTA = "Candidatus Krumholzibacteriota"
+    CANDIDATUS_THARPELLOTA = "Candidatus Tharpellota"
+    CHRYSIOGENETES = "Chrysiogenetes"
+    COLEOSPERMUM = "Coleospermum"
+    COPROTHERMOBACTEROTA = "Coprothermobacterota"
+    DEFERRIBACTERES = "Deferribacteres"
+    DESULFOBACTEROTA = "Desulfobacterota"
+    DICTYOGLOMI = "Dictyoglomi"
+    ELUSIMICROBIA = "Elusimicrobia"
+    FCB_GROUP = "FCB group"
+    FUSOBACTERIA = "Fusobacteria"
+    MYXOCCOCOTA = "Myxococcota"
+    NITROSFINAE_TECTOMICROBIA_GROUP = "Nitrospinae/Tectomicrobia group"
+    NITROSPIRAE = "Nitrospirae"
+    PROTEOBACTERIA = "Proteobacteria"
+    PVC_GROUP = "PVC group"
+    SPIROCHAETES = "Spirochaetes"
+    SYNERGISTETES = "Synergistetes"
+    TERRABACTERIA_GROUP = "Terrabacteria group"
+    THERMODESULFOBACTERIA = "Thermodesulfobacteria"
+    THERMOTOGAE = "Thermotogae"
+    BACTERIA_INCERTAE_SEDIS = "Bacteria incertae sedis"
+    UNCLASSIFIED_BACTERIA = "unclassified Bacteria"
+    ENVIRONMENTAL_SAMPLES = "environmental samples"
+
+
+AllKingdoms = Kingdom(
+    "AllKingdoms",
+    {
+        **{item.name: item.value for item in Archaea if item.name != "ALL"},
+        **{item.name: item.value for item in Eukaryota if item.name != "ALL"},
+        **{item.name: item.value for item in Bacteria if item.name != "ALL"},
+        "ALL": "All",
+    },
+)
+
+DOMAIN_MAP = {
+    Domain.ARCHAEA: Archaea,
+    Domain.BACTERIA: Bacteria,
+    Domain.EUKARYOTA: Eukaryota,
+    Domain.ALL: AllKingdoms,
+    Domain.UNCLASSIFIED: AllKingdoms,
+}
+
+
+def get_kingdom_for_domain(domain: Domain):
+    if domain in Domain:
+        kingdom_type = DOMAIN_MAP[domain]
+    else:
+        kingdom_type = AllKingdoms
+    return kingdom_type
+
 
 FIELDS = {
     "_id": "UniProt ID",
@@ -24,47 +148,49 @@ FIELDS = {
 DATA_FORM = {elem: 1 for elem in FIELDS}
 
 
-def construct_query(
-    selected_organismid,
-    selected_domain,
-    selected_kingdom,
-    selected_type,
-    show_signal_peptide,
-    selected_length,
-):
-    sp = int(show_signal_peptide)
+@dataclass
+class DBFilter:
+    taxa_selection: TaxaSelectionCriterion = TaxaSelectionCriterion.ORGANISM
+    organism_id: int = 0
+    domain: Domain = Domain.ALL
+    kingdom: Kingdom = AllKingdoms.ALL
+    topology: Topology = Topology.ALL
+    signal_peptide: bool = False
+    sequence_lengths: tuple[int, int] = (16, 5500)
+    num_sequences: int = 100
+    random_selection: bool = True
 
-    query_form = dict()
-    # sequence length
-    if selected_length != (16, 5500):
-        query_form["seq_length"] = {
-            "$gt": selected_length[0],
-            "$lt": selected_length[1],
-        }
+    def construct_query(self):
+        sp = int(self.signal_peptide)
 
-    # add topology filter if selected_type not "All"
-    if "Both" in selected_type:
-        query_form["annotations.tm_categorical"] = [1, 1, sp]
-    elif "Alpha-helix" in selected_type:
-        query_form["annotations.tm_categorical"] = [1, 0, sp]
-    elif "Beta-strand" in selected_type:
-        query_form["annotations.tm_categorical"] = [0, 1, sp]
+        query_form = dict()
+        # sequence length
+        if self.sequence_lengths != (16, 5500):
+            query_form["seq_length"] = {
+                "$gt": self.sequence_lengths[0],
+                "$lt": self.sequence_lengths[1],
+            }
 
-    if (
-        selected_organismid != ""
-        and selected_organismid != "0"
-        and selected_organismid.isnumeric()
-    ):
-        query_form["organism_id"] = int(selected_organismid)
+        # add topology filter if selected_type not "All"
+        if self.topology == Topology.BOTH or self.topology == Topology.ALL:
+            query_form["annotations.tm_categorical"] = [1, 1, sp]
+        elif self.topology == Topology.ALPHA_HELIX:
+            query_form["annotations.tm_categorical"] = [1, 0, sp]
+        elif self.topology == Topology.BETA_STRAND:
+            query_form["annotations.tm_categorical"] = [0, 1, sp]
 
-    # add filter for domain and kingdom
-    if "All" not in selected_domain and selected_organismid == "0":
-        query_form["uptaxonomy.Domain"] = selected_domain
+        if self.taxa_selection == TaxaSelectionCriterion.ORGANISM:
+            query_form["organism_id"] = int(self.organism_id)
 
-    if "All" not in selected_kingdom and selected_organismid == "0":
-        query_form["uptaxonomy.Kingdom"] = selected_kingdom
+        else:
+            if self.domain != Domain.ALL:
+                query_form["uptaxonomy.Domain"] = self.domain.value
 
-    return query_form
+            kingdom_type = get_kingdom_for_domain(self.domain)
+            if self.domain != kingdom_type.ALL:
+                query_form["uptaxonomy.Kingdom"] = self.domain.value
+
+        return query_form
 
 
 def init_connection():
@@ -180,12 +306,3 @@ def construct_membranome_annotation(item: None | dict[str, str | dict[str, str]]
     membdb_annotation[pos_start:pos_end] = ["AH"] * (pos_end - pos_start + 1)
 
     return membdb_annotation
-
-
-# TODO Error Message:
-# st.warning(
-#     "We are having trouble finding the predicted transmembrane topology of your protein in TMvisDB. "
-#     "This could mean, e.g., (1) your protein is outside the length restrictions of TMvisDB (see FAQ), (2) your protein is not predicted as a transmembrane protein, or (3) the UniProt ID is misspelled. "
-#     "If an AlphaFold structure is displayed below, it is without transmembrane topology annotation.",
-#     icon="🚨",
-# )

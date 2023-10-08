@@ -1,160 +1,141 @@
+from dataclasses import dataclass
+from enum import Enum
 
 import streamlit as st
 import re
+
+from utils.db import TaxaSelectionCriterion, Domain, Topology, DBFilter
+from utils import db
+
 sb = st.sidebar
 
-####################################################################
-# Options: Filter
-type_list = ['All', 'Both', 'Alpha-helix', 'Beta-strand']
-domain_list = ['All', 'Bacteria', 'Eukaryota', 'Archaea', 'unclassified sequences']
-kingdom_dict = dict()
-kingdom_dict['Archaea'] = \
-    ["All Archaea",
-     "Asgard group",
-    "Candidatus Hydrothermarchaeota",
-    "Candidatus Thermoplasmatota",
-    "DPANN group",
-    "Euryarchaeota",
-    "TACK group",
-    "Archaea incertae sedis"
-    "unclassified Archaea",
-    "environmental samples"]
-kingdom_dict['Eukaryota'] = \
-    ["All Eukaryota",
-    "Amoebozoa",
-    "Ancyromonadida",
-    "Apusozoa",
-    "Breviatea",
-    "CRuMs",
-    "Cryptophyceae (cryptomonads)",
-    "Discoba",
-    "Glaucocystophyceae",
-    "Haptista",
-    "Hemimastigophora",
-    "Malawimonadida",
-    "Metamonada",
-    "Opisthokonta",
-    "Rhodelphea",
-    "Rhodophyta (red algae)",
-    "Sar",
-    "Viridiplantae",
-    "Eukaryota incertae sedis",
-    "unclassified eukaryotes",
-    "environmental samples"]
-kingdom_dict["Bacteria"] = \
-    ["All Bacteria",
-    "Acidobacteria",
-    "Aquificae",
-    "Atribacterota",
-    "Caldiserica/Cryosericota group",
-    "Calditrichaeota",
-    "Candidatus Krumholzibacteriota",
-    "Candidatus Tharpellota",
-    "Chrysiogenetes",
-    "Coleospermum",
-    "Coprothermobacterota",
-    "Deferribacteres",
-    "Desulfobacterota",
-    "Dictyoglomi",
-    "Elusimicrobia",
-    "FCB group",
-    "Fusobacteria",
-    "Myxococcota",
-    "Nitrospinae/Tectomicrobia group",
-    "Nitrospirae",
-    "Proteobacteria",
-    "PVC group",
-    "Spirochaetes",
-    "Synergistetes",
-    "Terrabacteria group",
-    "Thermodesulfobacteria",
-    "Thermotogae",
-    "Bacteria incertae sedis",
-    "unclassified Bacteria",
-    "environmental samples"]
-
-kingdom_dict['All'] = ["All"] + kingdom_dict['Archaea'] + kingdom_dict['Bacteria'] + kingdom_dict['Eukaryota']
 
 ####################################################################
 
-def filters():
-    sb.markdown('<style>div.block-container{padding-top:1rem;}</style>', unsafe_allow_html=True)
+
+def display_sidebar_header():
+    sb.markdown(
+        "<style>div.block-container{padding-top:1rem;}</style>", unsafe_allow_html=True
+    )
     sb.markdown("---")
     sb.subheader("Search TMvisDB")
     sb.caption("Please open the 'Database' tab to see results.")
 
+
+def handle_random_selection():
     emp = sb.empty()
-    rand = emp.button('Show random selection', help='Click here to show 100 random proteins of TMvisDB.', disabled=st.session_state.rndm, key='1')
+    rand_selected = emp.button(
+        "Show random selection",
+        help="Click here to show 100 random proteins of TMvisDB.",
+        disabled=st.session_state.rndm,
+        key="1",
+    )
+    return rand_selected
 
-    if rand:
+
+def handle_taxonomy_selection():
+    taxonomy_selection = st.radio("Select Taxonomy via", TaxaSelectionCriterion)
+
+    disable_domain = True
+    if taxonomy_selection == TaxaSelectionCriterion.DOMAIN:
+        disable_domain = False
+
+    # Select Taxonomy: Organism ID
+    organism_id = st.text_input(
+        "Enter Organism ID",
+        help="Type in UniProt Organism ID.",
+        placeholder="9606",
+        disabled=not disable_domain,
+        value="",
+    )
+
+    # Select Taxonomy: Domain/Kingdom
+    domain = st.selectbox(
+        "Select Domain",
+        Domain,
+        help="Type domain or select from list.",
+        disabled=disable_domain,
+    )
+
+    kingdom_type = db.get_kingdom_for_domain(domain)
+
+    kingdom = st.selectbox(
+        "Select Kingdom",
+        kingdom_type,
+        help="Type kingdom or select from list.",
+        disabled=disable_domain,
+    )
+
+    return taxonomy_selection, organism_id, domain, kingdom
+
+
+def filters():
+    display_sidebar_header()
+
+    random_selected = handle_random_selection()
+    if random_selected:
         st.session_state.rndm = True
-        rand = emp.button('Show random selection', help='Click here to show 100 random proteins of TMvisDB.',
-                          disabled=st.session_state.rndm, key='2')
-        select_random = 1
-        selected_type = 'All'
-        selected_sp = '0'
-        selected_organismid = '0'
-        selected_domain = 'All'
-        selected_kingdom = 'All'
-        selected_limit = 100
+        return DBFilter()
+    else:
+        with sb.expander("Click here to access filters for TMvisDB."):
+            (
+                taxonomy_selection,
+                organism_id,
+                domain,
+                kingdom,
+            ) = handle_taxonomy_selection()
 
-    with sb.expander("Click here to access filters for TMvisDB."):
-        select_random = 0
-        st.caption("Once you picked your filters, click the submit button below and open the 'Database' tab.")
+            # Select TMP type
+            topology = st.selectbox(
+                "Filter by Transmembrane Topology ",
+                Topology,
+                help="TMbed predicts per-residue transmembrane topology as either alpha-helical or beta-stand.",
+            )
+            signal_peptide = st.checkbox(
+                "Show sequences with signal peptides",
+                value=False,
+                help="TMbed predicts whether a sequence contains signal peptides. Change 'Filter by Transmembrane Topology' to access.",
+                disabled=(topology != Topology.ALL),
+            )
 
-        # select TMP type
-        selected_type = st.selectbox('Filter by Transmembrane Topology ', type_list, help="TMbed predicts per-residue transmembrane topology as either alpha-helical or beta-stand.")
-        if selected_type == "All":
-            dis_type = True
-        else:
-            dis_type = False
-        selected_sp = st.checkbox('Show sequences with signal peptides', value=0, help="TMbed predicts whether a sequence contains signal peptides. Change 'Filter by Transmembrane Topology' to access.", disabled=dis_type)
+            # Sequence length range
+            sequence_length = st.slider(
+                "Select sequence length",
+                16,
+                5500,
+                (16, 5500),
+                help="Select a minimum and maximum value for sequence length.",
+            )
 
-        tax = st.radio("Select Taxonomy via", ('Organism ID', 'Domain/Kingdom'))
-        if tax == 'Organism ID':
-            dis_bx = True
-            dis_org = False
-            val = ''
-        else:
-            dis_bx = False
-            dis_org = True
-            val = ''
+            # Number of shown sequences
+            num_sequences = st.number_input(
+                "Select limit of shown sequences",
+                1,
+                10000,
+                value=100,
+                help="As TMvisDB is a large database, you may want to set a limit for your table.",
+            )
 
-        # select Taxonomy: Organism ID
-        selected_organismid = st.text_input('Enter Organism ID', help="Type in UniProt Organism ID.", placeholder='9606', disabled=dis_org, value = val)
-        # select Taxonomy: Domain
-        selected_domain = st.selectbox('Select Domain', domain_list, help="Type domain or select from list.", disabled=dis_bx)
-        # select Taxonomy: Kingdom
-        if selected_domain == "Bacteria":
-            kingdom_list = kingdom_dict["Bacteria"]
-        elif selected_domain == "Eukaryota":
-            kingdom_list = kingdom_dict["Eukaryota"]
-        elif selected_domain == "Archaea":
-            kingdom_list = kingdom_dict["Archaea"]
-        else:
-            kingdom_list = kingdom_dict['All']
-        selected_kingdom = st.selectbox('Select Kingdom', kingdom_list, help="Type kingdom or select from list.", disabled=dis_bx)
-        if tax == 'Organism ID':
-            selected_domain = 'Any'
-            selected_kingdom = 'Any'
-        elif tax == 'Domain/Kingdom':
-            selected_organismid = ''
+            # Submit results
+            subm = st.button(
+                "Submit filters",
+                help="Click here to show your selection.",
+                disabled=st.session_state.filt,
+            )
+            if subm:
+                st.session_state.filt = True
 
-        # Sequence length range
-        selected_length = st.slider('Select sequence length', 16, 5500, [16, 5500], help= "Select a minimum and maximum value for sequence length.")
-
-        # Number of shown sequences
-        selected_limit = st.number_input('Select limit of shown sequences', 1, 10000, value=100, help="As TMvisDB is a large database, you may want to set a limit for your table.")
-
-        # Submit results
-        emp2 = st.empty()
-        subm = emp2.button('Submit filters', help='Click here to show your selection.', disabled=st.session_state.filt, key='3')
-
-        if subm:
-            st.session_state.filt = True
-            subm = emp2.button('Submit filters', help='Click here to show your selection.', disabled=st.session_state.filt, key='4')
-
-    return selected_organismid, selected_domain, selected_kingdom, selected_type, selected_sp, selected_limit, select_random, selected_length
+        return DBFilter(
+            taxa_selection=taxonomy_selection,
+            organism_id=organism_id,
+            domain=domain,
+            kingdom=kingdom,
+            topology=topology,
+            signal_peptide=signal_peptide,
+            sequence_lengths=sequence_length,
+            num_sequences=num_sequences,
+            random_selection=False,
+        )
 
 
 def vis():
@@ -164,20 +145,27 @@ def vis():
 
     with sb.expander("Click here to access 3D visualization for single proteins."):
         # select ID
-        selected_id = st.text_input('Insert Uniprot ID', placeholder ="Q9NVH1")
+        selected_id = st.text_input("Insert Uniprot ID", placeholder="Q9NVH1")
         selected_id = selected_id.strip().upper()
-        #selected_id = re.sub(r'[^a-zA-Z0-9]','', selected_id).upper()
+        # selected_id = re.sub(r'[^a-zA-Z0-9]','', selected_id).upper()
         # select style
-        style = st.selectbox('Style', ['Cartoon', 'Line', 'Cross', 'Stick', 'Sphere']).lower()
+        style = st.selectbox(
+            "Style", ["Cartoon", "Line", "Cross", "Stick", "Sphere"]
+        ).lower()
         # select color
-        color_prot = st.selectbox('Color Scheme', ['Transmembrane Prediction', 'Alphafold pLDDT score'])
+        color_prot = st.selectbox(
+            "Color Scheme", ["Transmembrane Prediction", "Alphafold pLDDT score"]
+        )
         # select spin
-        spin = st.checkbox('Spin', value=False)
-        if selected_id == '':
-            selected_id="Q9NVH1"
+        spin = st.checkbox("Spin", value=False)
+        if selected_id == "":
+            selected_id = "Q9NVH1"
     return selected_id, style, color_prot, spin
+
 
 def end():
     sb.markdown("---")
-    st.sidebar.write("Authors: [Céline Marquet](https://github.com/C-Marquet), [Tobias Olenyi](https://github.com/t03i)")
-    st.sidebar.write("Source: [Github](https://github.com/marquetce/TMvisDB)")
+    st.sidebar.write(
+        "Authors: [Céline Marquet](https://github.com/C-Marquet), [Tobias Olenyi](https://github.com/t03i)"
+    )
+    st.sidebar.write("Source: [Github](https://github.com/rostlab/TMvisDB)")
