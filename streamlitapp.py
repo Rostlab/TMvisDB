@@ -59,7 +59,12 @@ def collect_and_display_protein_info(db_conn, selected_id):
                 protein_info.uniprot_name,
             )
         else:
-            st.write("Displaying protein with ID: ", protein_info.uniprot_accession)
+            st.write(
+                "Displaying protein with ID: ",
+                protein_info.uniprot_accession
+                if protein_info.uniprot_accession is not None
+                else selected_id,
+            )
 
     return protein_info
 
