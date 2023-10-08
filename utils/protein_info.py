@@ -35,11 +35,11 @@ class MembraneAnnotation:
 
     @property
     def has_an_topdb(self):
-        return self.tobdb_annotion is not None
+        return self.topdb is not None
 
     @property
     def has_an_membdb(self):
-        return self.membdb_annotion is not None
+        return self.membdb is not None
 
     @property
     def has_an_uniprot(self):

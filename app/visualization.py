@@ -53,11 +53,30 @@ def display_links(selected_id):
     st.markdown("\n".join(links))
 
 
+def format_available_annotations(annotations):
+    def prefix_annotation(annotation):
+        """Prefixes the annotation with 'a' or 'an'."""
+        first_word = annotation.split()[0].lower()
+        prefix = "an" if first_word[0] in ["a", "e", "i", "o", "u"] else "a"
+        return f"{prefix} {annotation.title()}"
+
+    if not annotations:
+        return "Found no available annotations."
+    else:
+        formatted_annotations = [prefix_annotation(ann) for ann in annotations]
+        if len(formatted_annotations) == 1:
+            connected = formatted_annotations[0]
+        elif len(formatted_annotations) == 2:
+            connected = f"{formatted_annotations[0]} and {formatted_annotations[1]}"
+        else:
+            connected = f"{', '.join(formatted_annotations[:-1])}, and {formatted_annotations[-1]}"
+        return f"Found {connected}."
+
+
 def display_membrane_annotation(protein_info: ProteinInfo):
     """Visualizes membrane annotations using the provided data."""
 
     st.write("Membrane Annotations")
-    logging.debug(protein_info.annotations.has_annotations)
     if not protein_info.annotations.has_annotations:
         st.caption("Could not find any annotations for this protein.")
         return
@@ -66,6 +85,11 @@ def display_membrane_annotation(protein_info: ProteinInfo):
         protein_info.sequence
     )
     styled_table = pred_table.T.style.apply(coloring.color_prediction, axis=0)
+
+    st.write(
+        format_available_annotations(protein_info.annotations.available_annotations)
+    )
+
     st.write(styled_table)
 
     st.caption(
