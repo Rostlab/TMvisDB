@@ -4,8 +4,12 @@ import streamlit as st
 import pymongo
 from pymongo.errors import ConnectionFailure
 import pandas as pd
+import logging
 
 from app import faq, table, overview, visualization, about, sidebar, header
+
+# Setting up logging configuration
+logging.basicConfig(level=logging.DEBUG)
 
 st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
 
@@ -37,26 +41,47 @@ if st.session_state.usg_stats:
     # Uses st.experimental_singleton to only run once.
     @st.cache_resource
     def init_connection():
+        host = os.environ.get("TMVIS_MONGO_HOST", "localhost")
+        port = int(os.environ.get("TMVIS_MONGO_PORT", 27017))
+        username = os.environ.get("TMVIS_MONGO_USERNAME", "")
+        password = os.environ.get("TMVIS_MONGO_PASSWORD", "")
+        auth_source = os.environ.get("TMVIS_MONGO_DB", "admin")
+
+        # Log the connection parameters (excluding password for security reasons)
+        logging.debug(
+            f"Connecting to MongoDB with host: {host}, port: {port}, username: {username}, authSource: {auth_source}"
+        )
+
         return pymongo.MongoClient(
-            host=os.environ.get("TMVIS_MONGO_HOST", "localhost"),
-            port=int(os.environ.get("TMVIS_MONGO_PORT", 27017)),
-            username=os.environ.get("TMVIS_MONGO_USERNAME", ""),
-            password=os.environ.get("TMVIS_MONGO_PASSWORD", ""),
-            authSource=os.environ.get("TMVIS_MONGO_DB", "admin"),
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            authSource=auth_source,
             appname="TMvis Frontend",
+            serverSelectionTimeoutMS=5000,  # 5 seconds timeout for server selection
+            connectTimeoutMS=5000,  # 5 seconds timeout for connection
         )
 
     client = init_connection()
+
+    # Test the connection
     try:
-        # The ismaster command is cheap and does not require auth.
         client.admin.command("ismaster")
-        db = client.microscope.tmvis
-    except ConnectionFailure:
-        st.error(
-            "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: tmvisdb@rostlab.org",
-            icon="🚨",
-        )
-        db = 0
+    except pymongo.errors.ServerSelectionTimeoutError:
+        logging.error("Could not connect to MongoDB. Server selection timed out.")
+    except pymongo.errors.ConnectionFailure:
+        logging.error("Failed to connect to MongoDB.")
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+
+    db = client.microscope.tmvis
+
+    # st.error(
+    #     "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: tmvisdb@rostlab.org",
+    #     icon="🚨",
+    # )
+    # db = 0
 
     ## Initialize session ##
     if "rndm" not in st.session_state:
