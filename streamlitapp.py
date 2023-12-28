@@ -188,7 +188,7 @@ def show_3d_visualization(db_conn, visualization_filter: VizFilter):
 
 def main():
     st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARNING)
 
     acknowledge_statistics_warning()
 
