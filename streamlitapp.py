@@ -1,17 +1,17 @@
+import logging
 import os
-import streamlit as st
-import pymongo
-import logging
-from pymongo.errors import ConnectionFailure
+
 import pandas as pd
-import logging
+import pymongo
+import streamlit as st
+from pymongo.errors import ConnectionFailure
 
 from app import database, faq, overview, visualization, about, sidebar, header
 from utils import db, api
-from utils.db import DBFilter
 from utils.api import UniprotACCType
+from utils.protein_visualization import VizFilter
+from utils.db import DBFilter
 from utils.protein_info import ProteinInfo
-from utils.coloring import Style
 
 
 def db_error():
@@ -128,21 +128,12 @@ def initialize_session_state():
     default_state = {
         "data": pd.DataFrame(),
         "user_display": "",
-        "filter": DBFilter(),
-        "visualization_style": Style(),
-        "visualization_protein_info": None,
+        "database_filter": DBFilter(),
+        "visualization_filter": VizFilter(),
     }
     for key, value in default_state.items():
         if key not in st.session_state:
             st.session_state[key] = value
-
-
-@st.cache_data(ttl=600, show_spinner=False)
-def get_initial_protein_info(_db_conn):
-    selected_id = getattr(st.session_state, "selected_id", "Q9NVH1").strip().upper()
-    input_format = api.check_input_format(selected_id)
-    protein_info = ProteinInfo.collect_for_id(_db_conn, selected_id, input_format)
-    return protein_info
 
 
 def handle_database_tab(db_conn):
@@ -153,12 +144,12 @@ def handle_database_tab(db_conn):
         db_error()
         return
 
-    db_filter = st.session_state.filter
+    database_filter = st.session_state.database_filter
 
-    if db_filter.random_selection:
-        database.display_random_data(db_conn, db_filter)
+    if database_filter.random_selection:
+        database.display_random_data(db_conn, database_filter)
     else:
-        database.display_filtered_data(db_conn, db_filter)
+        database.display_filtered_data(db_conn, database_filter)
 
     if not st.session_state.data.empty:
         database.show_table(st.session_state.data)
@@ -171,7 +162,7 @@ def handle_database_tab(db_conn):
         )
 
 
-def show_3d_visualization(db_conn, protein_info: ProteinInfo, style: Style):
+def show_3d_visualization(db_conn, visualization_filter: VizFilter):
     """
     Display 3D visualization of the protein.
     """
@@ -179,14 +170,20 @@ def show_3d_visualization(db_conn, protein_info: ProteinInfo, style: Style):
         db_error()
         return
 
-    # try:
-    visualization.create_visualization_for_id(protein_info, style)
-    # except Exception as e:
-    #     logging.error(f"An error occurred: {e}")
-    #     st.error(
-    #         "Sorry, we could not visualize your selected protein. Please contact us, so we can help you with your search.",  # noqa: E501
-    #         icon="🚨",
-    #     )
+    try:
+        input_format = api.check_input_format(visualization_filter.selected_id)
+        protein_info = ProteinInfo.collect_for_id(
+            db_conn, visualization_filter.selected_id, input_format
+        )
+        visualization.create_visualization_for_id(
+            protein_info, visualization_filter.style
+        )
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        st.error(
+            "Sorry, we could not visualize your selected protein. Please contact us, so we can help you with your search.",  # noqa: E501
+            icon="🚨",
+        )
 
 
 def main():
@@ -199,11 +196,6 @@ def main():
         db_conn = initialize_database_connection()
 
         initialize_session_state()
-
-        if st.session_state.visualization_protein_info is None:
-            st.session_state.visualization_protein_info = get_initial_protein_info(
-                db_conn
-            )
 
         # Sidebar
         sidebar.display_sidebar()
@@ -229,20 +221,17 @@ def main():
                     0,
                 )
 
+                filter = VizFilter(
+                    style=st.session_state.visualization_filter.style,
+                    selected_id=local_id,
+                )
+
                 with st.spinner("Loading Protein Data"):
-                    protein_info = collect_and_display_protein_info(db_conn, local_id)
-                    if protein_info is not None:
-                        show_3d_visualization(
-                            db_conn, protein_info, st.session_state.visualization_style
-                        )
+                    show_3d_visualization(db_conn, filter)
             st.markdown("---")
 
         with tab_visualization:
-            show_3d_visualization(
-                db_conn,
-                st.session_state.visualization_protein_info,
-                st.session_state.visualization_style,
-            )
+            show_3d_visualization(db_conn, st.session_state.visualization_filter)
             st.markdown("---")
 
         with tab_faq:

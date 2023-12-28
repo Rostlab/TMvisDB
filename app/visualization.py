@@ -7,15 +7,15 @@ import pandas as pd
 from st_aggrid import AgGrid
 
 
-from utils.coloring import (
+from utils.protein_visualization import (
     ALPHAFOLD_LEGEND_DF,
     ANNOTATION_LEGEND_DF,
 )
 
-from utils import coloring
+from utils import protein_visualization
 
 from utils.protein_info import ProteinInfo
-from utils.coloring import Style, ColorScheme
+from utils.protein_visualization import Style, ColorScheme
 
 
 def display_legend(color_scheme: ColorScheme, has_no_pred):
@@ -24,13 +24,13 @@ def display_legend(color_scheme: ColorScheme, has_no_pred):
     if color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE or has_no_pred:
         st.write(
             ALPHAFOLD_LEGEND_DF.style.applymap(
-                coloring.alphafold_legend_coloring, subset=["pLDDT score"]
+                protein_visualization.alphafold_legend_coloring, subset=["pLDDT score"]
             )
         )
     else:
         st.write(
             ANNOTATION_LEGEND_DF.style.applymap(
-                coloring.annotation_legend_coloring, subset=["Color"]
+                protein_visualization.annotation_legend_coloring, subset=["Color"]
             )
         )
         st.caption(
@@ -84,7 +84,9 @@ def display_membrane_annotation(protein_info: ProteinInfo):
     pred_table = protein_info.annotations.construct_annotation_table(
         protein_info.sequence
     )
-    styled_table = pred_table.T.style.apply(coloring.color_prediction, axis=0)
+    styled_table = pred_table.T.style.apply(
+        protein_visualization.color_prediction, axis=0
+    )
 
     st.write(
         format_available_annotations(protein_info.annotations.available_annotations)
@@ -132,7 +134,9 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
             },
         )
     else:
-        tm_color = coloring.map_annotation_to_color(protein_info.annotations.predicted)
+        tm_color = protein_visualization.map_annotation_to_color(
+            protein_info.annotations.predicted
+        )
         view.setStyle(
             {"model": -1},
             {

@@ -41,6 +41,12 @@ class Style:
     spin: bool = False
 
 
+@dataclass
+class VizFilter:
+    style: Style = Style()
+    selected_id: str = ""
+
+
 ANNOTATION_LEGEND_DF = pd.DataFrame.from_records(
     [
         {

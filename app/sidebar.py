@@ -8,7 +8,7 @@ import streamlit as st
 from utils.db import TaxaSelectionCriterion, Domain, Topology, DBFilter
 from utils import db
 from utils import api
-from utils.coloring import ProteinStyle, ColorScheme, Style
+from utils.protein_visualization import ProteinStyle, ColorScheme, VizFilter, Style
 
 sb = st.sidebar
 
@@ -121,12 +121,12 @@ def create_vis_form():
     sb.caption("Please open the 'Visualization' tab to see results.")
 
     with sb.expander("Click here to access 3D visualization for single proteins."):
-        st.text_input("Insert Uniprot ID", placeholder="Q9NVH1")
+        st.text_input("Insert Uniprot ID", placeholder="Q9NVH1", key="visualization_id")
 
         st.selectbox(
             "Style",
             ProteinStyle,
-            key="style",
+            key="visualization_style",
             format_func=lambda x: x.value,
         )
         # select color
@@ -179,19 +179,19 @@ def handle_random_selection():
 
 
 def handle_vis_changes():
-    selected_id = getattr(st.session_state, "selected_id", "Q9NVH1").strip().upper()
-    input_format = api.check_input_format(selected_id)
-    # TODO fix this
-    protein_info = api.get_protein_info(selected_id, input_format)
-    attributes = ["style", "color_scheme", "spin"]
+    selected_id = (
+        getattr(st.session_state, "visualization_id", "Q9NVH1").strip().upper()
+    )
+    attributes = ["visualization_style", "color_scheme", "spin"]
     style_kwargs = {
         attr: getattr(st.session_state, attr)
         for attr in attributes
         if hasattr(st.session_state, attr)
     }
     style = Style(**style_kwargs)
-    st.session_state.visualization_protein = protein_info
-    st.session_state.visualization_style = style
+    st.session_state.visualization_filter = VizFilter(
+        style=style, selected_id=selected_id
+    )
 
 
 def display_sidebar():
