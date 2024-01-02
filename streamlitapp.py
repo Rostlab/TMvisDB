@@ -9,7 +9,7 @@ from pymongo.errors import ConnectionFailure
 from app import database, faq, overview, visualization, about, sidebar, header
 from utils import db, api
 from utils.api import UniprotACCType
-from utils.protein_visualization import VizFilter
+from utils.protein_visualization import VizFilter, Style
 from utils.db import DBFilter
 from utils.protein_info import ProteinInfo
 
@@ -129,7 +129,7 @@ def initialize_session_state():
         "data": pd.DataFrame(),
         "user_display": "",
         "database_filter": DBFilter(),
-        "visualization_filter": VizFilter(),
+        "visualization_filter": VizFilter(style=Style(), selected_id="Q9NVH1"),
     }
     for key, value in default_state.items():
         if key not in st.session_state:
