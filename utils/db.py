@@ -177,8 +177,6 @@ class DBFilter:
             query_form["annotations.tm_categorical"] = [1, 0, sp]
         elif self.topology == Topology.BETA_STRAND:
             query_form["annotations.tm_categorical"] = [0, 1, sp]
-        elif self.topology == Topology.ALL:
-            query_form["annotations.tm_categorical"] = [1, 1, sp]
 
         if (
             self.taxonomy_selection == TaxaSelectionCriterion.ORGANISM
