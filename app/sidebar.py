@@ -171,11 +171,11 @@ def handle_db_filter():
         for attr in attributes
         if hasattr(st.session_state, attr)
     }
-    st.session_state.filter = DBFilter(**filter_kwargs, random_selection=False)
+    st.session_state.database_filter = DBFilter(**filter_kwargs, random_selection=False)
 
 
 def handle_random_selection():
-    st.session_state.filter = DBFilter()
+    st.session_state.database_filter = DBFilter(random_selection=True)
 
 
 def handle_vis_changes():
