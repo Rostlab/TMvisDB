@@ -30,11 +30,11 @@ def show_table(df: pd.DataFrame):
     )  # , update_mode='manual')#theme='alpine',
 
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def display_random_data(_db_conn, db_filter: DBFilter):
     with st.spinner("Loading random data..."):
         st.session_state.data = db.get_random_data(_db_conn, db_filter.num_sequences)
-    st.session_state.user_display = "The table below shows a random selection. Use the sidebar filters for a personalized selection."  # noqa: E501
+    st.session_state.user_display = "The table below shows a random selection. You can generate a new selection every 20 min. Use the sidebar filters for a personalized selection."  # noqa: E501
 
 
 @st.cache_data(ttl=600, show_spinner=False)

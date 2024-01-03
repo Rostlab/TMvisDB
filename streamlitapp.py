@@ -151,6 +151,10 @@ def handle_database_tab(db_conn):
     else:
         database.display_filtered_data(db_conn, database_filter)
 
+    if not st.st.session_state.user_display.empty:
+        st.write(st.session_state.user_display)
+        st.markdown("---")
+
     if not st.session_state.data.empty:
         database.show_table(st.session_state.data)
         st.download_button(
