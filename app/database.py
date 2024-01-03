@@ -34,7 +34,7 @@ def show_table(df: pd.DataFrame):
 def display_random_data(_db_conn, db_filter: DBFilter):
     with st.spinner("Loading random data..."):
         st.session_state.data = db.get_random_data(_db_conn, db_filter.num_sequences)
-    st.session_state.user_display = "The table below shows a random selection. You can generate a new selection every 20 min. Use the sidebar filters for a personalized selection."  # noqa: E501
+    st.session_state.user_display = "The table below shows a random selection. You can retrieve new random data every minute. Use the sidebar filters for a personalized selection."  # noqa: E501
 
 
 @st.cache_data(ttl=600, show_spinner=False)
@@ -44,8 +44,4 @@ def display_filtered_data(_db_conn, db_filter: DBFilter):
         st.session_state.data = db.get_filtered_data(
             _db_conn, query_form, db_filter.num_sequences
         )
-        st.session_state.user_display = (
-            f"The table below shows your personalized selection: topology ({db_filter.topology}),"  # noqa: E501
-            f"taxonomy (Organism ID: {db_filter.organism_id}, Domain: {db_filter.domain}, Kingdom: {db_filter.kingdom}), "  # noqa: E501
-            f"length {str(db_filter.sequence_lengths)}. For a random selection use the sidebar button."  # noqa: E501
-        )
+        st.session_state.user_display = f"The table below shows your personalized selection: {str(db_filter)}. For a random selection use the sidebar button."  # noqa: E501

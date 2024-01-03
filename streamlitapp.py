@@ -151,7 +151,7 @@ def handle_database_tab(db_conn):
     else:
         database.display_filtered_data(db_conn, database_filter)
 
-    if not st.st.session_state.user_display.empty:
+    if not st.session_state.user_display == "":
         st.write(st.session_state.user_display)
         st.markdown("---")
 

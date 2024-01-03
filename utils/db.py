@@ -197,6 +197,38 @@ class DBFilter:
         logging.debug(query_form)
         return query_form
 
+    def __str__(self):
+        parts = []
+
+        # Topology
+        if self.topology is not None:
+            parts.append(
+                f"topology: {self.topology.value} ({' not' if (not self.signal_peptide and self.topology is not Topology.ALL) else ''} including signal peptides )"  # noqa: E501
+            )
+
+        # Taxonomy
+        taxonomy_parts = []
+        if self.organism_id is not None:
+            taxonomy_parts.append(f"Organism ID: {self.organism_id}")
+        if self.domain is not None:
+            taxonomy_parts.append(f"Domain: {self.domain.value}")
+        if self.kingdom is not None:
+            taxonomy_parts.append(f"Kingdom: {self.kingdom.value}")
+
+        if taxonomy_parts:
+            parts.append(f"taxonomy ({', '.join(taxonomy_parts)})")
+
+        # Sequence Lengths
+        if self.sequence_lengths != (16, 5500):
+            parts.append(
+                f"length range: {self.sequence_lengths[0]}-{self.sequence_lengths[1]}"
+            )
+        else:
+            parts.append("all lengths")
+
+        # Final String
+        return ", ".join(parts)
+
 
 def init_connection():
     host = os.environ.get("TMVIS_MONGO_HOST", "localhost")
