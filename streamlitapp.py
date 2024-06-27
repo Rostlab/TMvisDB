@@ -9,7 +9,7 @@ from pymongo.errors import ConnectionFailure
 from app import database, faq, overview, visualization, about, sidebar, header
 from utils import db, api
 from utils.api import UniprotACCType
-from utils.protein_visualization import VizFilter, Style
+from utils.protein_visualization import ColorScheme, VizFilter, Style
 from utils.db import DBFilter
 from utils.protein_info import ProteinInfo
 
@@ -152,7 +152,7 @@ def handle_database_tab(db_conn):
         database.display_filtered_data(db_conn, database_filter)
 
     if not st.session_state.user_display == "":
-        st.write(st.session_state.user_display)
+        st.markdown(st.session_state.user_display)
         st.markdown("---")
 
     if not st.session_state.data.empty:
@@ -226,7 +226,7 @@ def main():
                 )
 
                 filter = VizFilter(
-                    style=st.session_state.visualization_filter.style,
+                    style=ColorScheme.TMVISDB,
                     selected_id=local_id,
                 )
 

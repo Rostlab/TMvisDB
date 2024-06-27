@@ -44,4 +44,4 @@ def display_filtered_data(_db_conn, db_filter: DBFilter):
         st.session_state.data = db.get_filtered_data(
             _db_conn, query_form, db_filter.num_sequences
         )
-        st.session_state.user_display = f"The table below shows your personalized selection: {str(db_filter)}. For a random selection use the sidebar button."  # noqa: E501
+        st.session_state.user_display = f"The table below shows your personalized selection -  {db_filter.to_markdown()}. For a random selection use the sidebar button."  # noqa: E501
