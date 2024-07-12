@@ -6,6 +6,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 
 from utils import database
 from utils.database import DBFilter
+from utils.lineage_definitions import Topology
 
 
 @st.cache_data
@@ -51,6 +52,7 @@ def filter_to_markdown(db_filter: DBFilter):
 
 
 def show_table(df: pd.DataFrame):
+    # TODO rename fields
 
     builder = GridOptionsBuilder.from_dataframe(df, columnwidth=3)
     builder.configure_pagination(

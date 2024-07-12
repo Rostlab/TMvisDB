@@ -18,7 +18,6 @@ from peewee import (
     fn,
 )
 
-from .protein_info import MembraneAnnotation
 import utils.lineage_definitions as lineage_definitions
 from .lineage_definitions import (
     TaxaSelectionCriterion,
@@ -166,46 +165,23 @@ class DBFilter:
         return filters
 
 
-def get_sequence_data(db_conn: SqliteDatabase, db_filter: DBFilter):
-    query = db_filter.construct_query()
-    items = db_conn.execute(query)
-    dict_items = items.dicts()
-    if dict_items is not None:
-        return pd.DataFrame(dict_items)
+def get_sequence_data(db_filter: DBFilter):
+    query = db_filter.construct_query().dicts()
+    if query is not None:
+        return pd.DataFrame(query)
     return None
 
 
-def get_data_for_id(db_conn, selected_id: str):
-    query = {"_id": selected_id}
-    return get_filtered_data(db_conn, query, sample_size=1)
+def get_sequence_data_for_id(selected_id: str):
+    return Sequence.get_or_none(Sequence.uniprot_accession == selected_id)
 
 
-def get_membrane_annotation_for_id(db_conn, selected_id: str):
-    query = {"_id": selected_id}
-    membranome_form = {
-        "seq_length": 1,
-        "predictions": 1,
-        "topdb.TopDB_Entry": 1,
-        "membranomedb.tm_seq_start": 1,
-        "membranomedb.tm_seq_end": 1,
-    }
+def get_membrane_annotation_for_id(selected_id: str):
+    sequence = Sequence.get_or_none(Sequence.uniprot_accession == selected_id)
 
-    tmbed_annotation: list[str] = None
-    topdb_annotation: list[str] = None
-    membdb_annotation: list[str] = None
+    annotations = Annotation.select().where(Annotation.sequence == sequence)
 
-    item = list(db_conn.tmvis.find(query, membranome_form))
+    if len(annotations) == 0:
+        raise ValueError("Could not find any annotations for the given sequence.")
 
-    if not item:
-        raise ValueError("Item not found in database.")
-
-    # TMbed prediction
-    tmbed_annotation = list(item[0]["predictions"]["transmembrane"])
-
-    # TopDB annotation
-    topdb_annotation = construct_topdb_annotation(item[0])
-
-    # Membranome annotation
-    membdb_annotation = construct_membranome_annotation(item[0])
-
-    return MembraneAnnotation(tmbed_annotation, topdb_annotation, membdb_annotation)
+    return annotations

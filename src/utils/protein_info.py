@@ -7,90 +7,44 @@ import pandas as pd
 
 from utils import database, api
 from utils.api import UniprotACCType
+from utils import annotations
+from utils.annotations import MembraneAnnotation, AnnotationSource
 
 
-@dataclass
-class MembraneAnnotation:
-    predicted: list[str] | None = field(
-        default=None, metadata={"col_name": "TMbed Prediction"}
-    )  # noqa: E501
-    topdb: list[str] | None = field(
-        default=None, metadata={"col_name": "TopDB Annotation"}
-    )  # noqa: E501
-    membdb: list[str] | None = field(
-        default=None, metadata={"col_name": "Membranome Annotation"}
-    )  # noqa: E501
-    uniprot: list[str] | None = field(
-        default=None, metadata={"col_name": "UniProt Annotation"}
-    )  # noqa: E501
-    alphafold: list[str] | None = field(
-        default=None, metadata={"col_name": "TmAlphaFold Annotation"}
-    )  # noqa: E501
+def collect_annotations_for_id(selected_id: str, uniprot_acc_type: UniprotACCType):
+    annotation = MembraneAnnotation()
 
-    @property
-    def has_an_predicted(self):
-        return self.predicted is not None
+    (
+        uniprot_accession,
+        uniprot_name,
+        uniprot_annotation,
+        uniprot_seq_length,
+    ) = api.get_uniprot_tmvec(selected_id, uniprot_acc_type)
 
-    @property
-    def has_an_topdb(self):
-        return self.topdb is not None
-
-    @property
-    def has_an_membdb(self):
-        return self.membdb is not None
-
-    @property
-    def has_an_uniprot(self):
-        return self.uniprot is not None
-
-    @property
-    def has_an_alphafold(self):
-        return self.alphafold is not None
-
-    @property
-    def __annotation_fields(self):
-        return [
-            annotation
-            for annotation in fields(self)
-            if "col_name" in annotation.metadata
-        ]
-
-    @property
-    def has_annotations(self):
-        return any(
-            getattr(self, f"has_an_{annotation.name}")
-            for annotation in self.__annotation_fields
+    if uniprot_annotation is not None:
+        annotation[AnnotationSource.UNIPROT] = uniprot_annotation
+        annotation.reference_urls[AnnotationSource.UNIPROT] = (
+            f"https://www.uniprot.org/uniprotkb/{uniprot_accession}/entry"
         )
 
-    @property
-    def available_annotations(self):
-        return [
-            annotation.metadata.get("col_name")
-            for annotation in self.__annotation_fields
-            if getattr(self, f"has_an_{annotation.name}")
-        ]
+    alphafold_annotation, url = api.get_tmalphafold_annotation(
+        uniprot_name if uniprot_name is not None else selected_id,
+        uniprot_seq_length,
+    )
 
-    def construct_annotation_table(self, sequence: list[str]):
-        used_annotation_fields = [
-            annotation
-            for annotation in self.__annotation_fields
-            if getattr(self, annotation.name) is not None
-        ]
+    if alphafold_annotation is not None:
+        annotation[AnnotationSource.ALPHAFOLD] = alphafold_annotation
+        annotation.reference_urls[AnnotationSource.ALPHAFOLD] = url
 
-        return pd.DataFrame(
-            zip(
-                sequence,
-                *[
-                    getattr(self, annotation.name)
-                    for annotation in used_annotation_fields
-                ],
-            ),
-            columns=["Sequence"]
-            + [
-                annotation.metadata.get("col_name", "")
-                for annotation in used_annotation_fields
-            ],
-        )
+    db_annotations = database.get_membrane_annotation_for_id(selected_id)
+    parsed_db_annoations, parsed_db_refs = annotations.annotations_from_db(
+        db_annotations
+    )
+
+    annotation.annotations |= parsed_db_annoations
+    annotation.reference_urls |= parsed_db_refs
+
+    return annotation, uniprot_accession, uniprot_name
 
 
 @dataclass
@@ -114,26 +68,17 @@ class ProteinInfo:
         )
 
     @staticmethod
-    def collect_for_id(db_conn, selected_id: str, uniprot_acc_type: UniprotACCType):
+    def collect_for_id(
+        db_conn,
+        selected_id: str,
+    ):
         # get uniprot annotation
-        (
-            uniprot_accession,
-            uniprot_name,
-            uniprot_annotation,
-            uniprot_seq_length,
-        ) = api.get_uniprot_tmvec(selected_id, uniprot_acc_type)
 
-        db_annotation = database.get_membrane_annotation_for_id(db_conn, selected_id)
-
-        alphafold_annotation = api.get_tmalphafold_annotation(
-            uniprot_name if uniprot_name is not None else selected_id,
-            uniprot_seq_length,
+        db_annotation, uniprot_name, uniprot_accession = (
+            database.get_membrane_annotation_for_id(db_conn, selected_id)
         )
 
-        db_annotation.uniprot = uniprot_annotation
-        db_annotation.alphafold = alphafold_annotation
-
-        sequence_info_df = database.get_data_for_id(db_conn, selected_id)
+        sequence_info_df = database.get_sequence_data_for_id(db_conn, selected_id)
         sequence, structure = api.get_af_structure(
             uniprot_accession if uniprot_accession is not None else selected_id
         )

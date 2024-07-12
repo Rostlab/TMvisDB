@@ -109,6 +109,6 @@ def get_tmalphafold_annotation(up_name, seq_length):
                 pos_start = int(entry["_attributes"]["seq_beg"]) - 1
                 pos_end = int(entry["_attributes"]["seq_end"])
                 tmaf_tm_vec[pos_start:pos_end] = ["AH"] * (pos_end - pos_start)
-        return tmaf_tm_vec
+        return tmaf_tm_vec, url
     else:
-        return None
+        return None, None
