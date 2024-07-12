@@ -11,11 +11,11 @@ from utils.protein_visualization import (
     ALPHAFOLD_LEGEND_DF,
     ANNOTATION_LEGEND_DF,
 )
-
 from utils import protein_visualization
 
 from utils.protein_info import ProteinInfo
 from utils.protein_visualization import Style, ColorScheme
+from utils import annotations
 
 
 def display_legend(color_scheme: ColorScheme, has_no_pred):
@@ -38,11 +38,12 @@ def display_legend(color_scheme: ColorScheme, has_no_pred):
         )
 
 
-def display_links(selected_id):
+def display_links(protein_info: ProteinInfo):
+    # TOD refactor based on links
     """Displays links to various resources for further evaluation."""
     links = [
-        f"- UniProt entry: [{selected_id}](https://www.uniprot.org/uniprotkb/{selected_id}/entry)",
-        f"- Evaluate protein-specific phenotype predictions: [LambdaPP](https://lambda.predictprotein.org/o/{selected_id})",
+        f"- UniProt entry: [{protein_info.uniprot_accession}](https://www.uniprot.org/uniprotkb/{protein_info.uniprot_accession}/entry)",
+        f"- Evaluate protein-specific phenotype predictions: [LambdaPP](https://lambda.predictprotein.org/o/{protein_info.uniprot_accession})",
         "- Generate structural alignments: [Foldseek](https://search.foldseek.com/search)",
         "- Experimentally derived topology information: [Topology Data Bank of Transmembrane Proteins](https://topdb.unitmp.org//)",  # noqa: E501
         "- Membranome database for single-helix transmembrane proteins: [Membranome](https://membranome.org/)",
@@ -54,6 +55,9 @@ def display_links(selected_id):
 
 
 def format_available_annotations(annotations):
+
+    # TODO refactor according to sources
+
     def prefix_annotation(annotation):
         """Prefixes the annotation with 'a' or 'an'."""
         first_word = annotation.split()[0].lower()
@@ -77,19 +81,19 @@ def display_membrane_annotation(protein_info: ProteinInfo):
     """Visualizes membrane annotations using the provided data."""
 
     st.Markdown("## Membrane Annotations")
-    if not protein_info.annotations.has_annotations:
+    if not protein_info.annotation.has_annotations:
         st.caption("Could not find any annotations for this protein.")
         return
 
-    pred_table = protein_info.annotations.construct_annotation_table(
-        protein_info.sequence
+    pred_table = annotations.construct_df_from_annotation(
+        protein_info.annotation, protein_info.sequence
     )
     styled_table = pred_table.T.style.apply(
         protein_visualization.color_prediction, axis=0
     )
 
     st.write(
-        format_available_annotations(protein_info.annotations.available_annotations)
+        format_available_annotations(protein_info.annotation.available_annotations)
     )
 
     st.write(styled_table)
@@ -118,7 +122,7 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
     # add color
     if (
         style.color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE
-        or not protein_info.annotations.has_an_predicted
+        or not protein_info.annotation.has_an_predicted
     ):
         view.setStyle(
             {"model": -1},
@@ -135,7 +139,7 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
         )
     else:
         tm_color = protein_visualization.map_annotation_to_color(
-            protein_info.annotations.predicted
+            protein_info.annotation.predicted
         )
         view.setStyle(
             {"model": -1},
@@ -167,10 +171,10 @@ def create_visualization_for_id(
     # Explain colors used in the visualization
     display_legend(
         color_scheme=style.color_scheme,
-        has_no_pred=not protein_info.annotations.has_an_predicted,
+        has_no_pred=not protein_info.annotation.has_an_predicted,
     )
 
     st.markdown("---")
 
     # Display links to other resources
-    display_links(protein_info.uniprot_accession)
+    display_links(protein_info)

@@ -11,7 +11,7 @@ from utils import annotations
 from utils.annotations import MembraneAnnotation, AnnotationSource
 
 
-def collect_annotations_for_id(selected_id: str, uniprot_acc_type: UniprotACCType):
+def fetch_membrane_annotations(selected_id: str, uniprot_acc_type: UniprotACCType):
     annotation = MembraneAnnotation()
 
     (
@@ -54,31 +54,25 @@ class ProteinInfo:
     uniprot_name: str
     sequence: str
     structure: bytes
-    annotations: MembraneAnnotation
+    annotation: MembraneAnnotation
     info_df: pd.DataFrame
 
     @property
     def has_annotations(self):
-        return (
-            self.annotations.has_an_predicted
-            or self.annotations.has_an_topdb
-            or self.annotations.has_an_membdb
-            or self.annotations.has_an_uniprot
-            or self.annotations.has_an_alphafold
-        )
+        return len(self.annotation.annotations) > 0
 
     @staticmethod
     def collect_for_id(
         db_conn,
         selected_id: str,
     ):
-        # get uniprot annotation
 
         db_annotation, uniprot_name, uniprot_accession = (
-            database.get_membrane_annotation_for_id(db_conn, selected_id)
+            database.get_membrane_annotation_for_id(selected_id)
         )
 
-        sequence_info_df = database.get_sequence_data_for_id(db_conn, selected_id)
+        sequence_info_df = database.get_sequence_data_for_id(selected_id)
+
         sequence, structure = api.get_af_structure(
             uniprot_accession if uniprot_accession is not None else selected_id
         )
@@ -89,6 +83,6 @@ class ProteinInfo:
             uniprot_name=uniprot_name,
             sequence=sequence,
             structure=structure,
-            annotations=db_annotation,
+            annotation=db_annotation,
             info_df=sequence_info_df,
         )

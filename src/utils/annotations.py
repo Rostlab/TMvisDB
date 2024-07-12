@@ -57,21 +57,22 @@ class MembraneAnnotation:
     )
     reference_urls: dict[AnnotationSource, str] = field(default_factory=dict)
 
-    def construct_annotation_table(self, sequence: list[str]):
 
-        return pd.DataFrame(
-            zip(
-                sequence,
-                *[
-                    ANNOTATION_HANDLER_MAP[source](
-                        sequence, self.annotations.get(source)
-                    )
-                    for source in self.annotations
-                ],
-            ),
-            columns=["Sequence"]
-            + [DISPLAY_NAMES[source] for source in self.annotations],
-        )
+def construct_df_from_annotation(annotation: MembraneAnnotation, sequence: list[str]):
+
+    return pd.DataFrame(
+        zip(
+            sequence,
+            *[
+                ANNOTATION_HANDLER_MAP[source](
+                    sequence, annotation.annotations.get(source)
+                )
+                for source in annotation.annotations
+            ],
+        ),
+        columns=["Sequence"]
+        + [DISPLAY_NAMES[source] for source in annotation.annotations],
+    )
 
 
 # TODO Fix this
