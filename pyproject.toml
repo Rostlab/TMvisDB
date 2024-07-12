@@ -93,7 +93,6 @@ dependencies = [
     "pycparser==2.21",
     "pydeck==0.8.0",
     "Pygments==2.16.1",
-    "pymongo==4.5.0",
     "Pympler==1.0.1",
     "python-dateutil==2.8.2",
     "python-decouple==3.8",

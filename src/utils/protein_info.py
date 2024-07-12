@@ -1,13 +1,11 @@
 # Copyright 2023 RostLab.
 # SPDX-License-Identifier: 	AGPL-3.0-or-later
-
-
 from dataclasses import dataclass, field, fields
 import logging
 
 import pandas as pd
 
-from utils import db, api
+from utils import database, api
 from utils.api import UniprotACCType
 
 
@@ -125,7 +123,7 @@ class ProteinInfo:
             uniprot_seq_length,
         ) = api.get_uniprot_tmvec(selected_id, uniprot_acc_type)
 
-        db_annotation = db.get_membrane_annotation_for_id(db_conn, selected_id)
+        db_annotation = database.get_membrane_annotation_for_id(db_conn, selected_id)
 
         alphafold_annotation = api.get_tmalphafold_annotation(
             uniprot_name if uniprot_name is not None else selected_id,
@@ -135,7 +133,7 @@ class ProteinInfo:
         db_annotation.uniprot = uniprot_annotation
         db_annotation.alphafold = alphafold_annotation
 
-        sequence_info_df = db.get_data_for_id(db_conn, selected_id)
+        sequence_info_df = database.get_data_for_id(db_conn, selected_id)
         sequence, structure = api.get_af_structure(
             uniprot_accession if uniprot_accession is not None else selected_id
         )

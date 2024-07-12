@@ -1,16 +1,14 @@
 import logging
-import os
+import sqlite3
 
 import pandas as pd
-import pymongo
 import streamlit as st
-from pymongo.errors import ConnectionFailure
 
-from app import database, faq, overview, visualization, about, sidebar, header
-from utils import db, api
+from app import data, faq, overview, visualization, about, sidebar, header
+from utils import database, api
 from utils.api import UniprotACCType
 from utils.protein_visualization import ColorScheme, VizFilter, Style
-from utils.db import DBFilter
+from utils.database import DBFilter
 from utils.protein_info import ProteinInfo
 
 
@@ -28,13 +26,10 @@ def collect_and_display_protein_info(db_conn, selected_id):
 
     if uniprot_acc_type == UniprotACCType.UNKNOWN:
         st.error(
-            "The input format of your selected ID ** "
-            + selected_id
-            + " ** is not correct.",
+            f"The input format of your selected ID ** {selected_id} ** is not correct.",
             icon="🚨",
         )
-
-        return
+        return None
 
     protein_info: ProteinInfo = ProteinInfo.collect_for_id(
         db_conn, selected_id, uniprot_acc_type
@@ -45,7 +40,7 @@ def collect_and_display_protein_info(db_conn, selected_id):
             icon="🚨",
         )
 
-    if protein_info.has_annotations and protein_info.uniprot_accession is None:
+    if protein_info.has_annotations and not protein_info.uniprot_accession:
         st.warning(
             f"We could not find a protein in UniProtKB/TrEMBL matching your ID: {selected_id}."  # noqa: E501
         )
@@ -54,17 +49,15 @@ def collect_and_display_protein_info(db_conn, selected_id):
     if protein_info.sequence is not None:
         if protein_info.uniprot_accession != protein_info.uniprot_name:
             st.write(
-                "Displaying protein with UniProt accession number: ",
-                protein_info.uniprot_accession,
-                " and UniProt entry name:",
-                protein_info.uniprot_name,
+                f"Displaying protein with UniProt accession number: {protein_info.uniprot_accession} and UniProt entry name: {protein_info.uniprot_name}"  # noqa: E501
             )
         else:
             st.write(
-                "Displaying protein with ID: ",
-                protein_info.uniprot_accession
-                if protein_info.uniprot_accession is not None
-                else selected_id,
+                f"Displaying protein with ID: {
+                    protein_info.uniprot_accession
+                    if protein_info.uniprot_accession is not None
+                    else selected_id
+                }"
             )
 
     return protein_info
@@ -98,21 +91,19 @@ def acknowledge_statistics_warning():
 @st.cache_resource
 def initialize_database_connection():
     """
-    Initialize the MongoDB connection.
+    Initialize the Database connection.
     Returns the database connection if successful or None if unsuccessful.
     """
-    client = db.init_connection()
 
     try:
-        client.admin.command("ismaster")
-        return client.microscope
+        client = database.DATABASE.connect()
+        return client 
     except (
-        pymongo.errors.ServerSelectionTimeoutError,
-        pymongo.errors.ConnectionFailure,
-    ):
-        logging.error("Failed to connect to MongoDB.")
+        sqlite3.OperationalError 
+    ) as e:
+        logging.error(f"Failed to connect to Sqlite. {str(e)}")
         st.error(
-            "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: tmvisdb@rostlab.org",  # noqa: E501
+            "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: service+tmvisdb@rostlab.org",  # noqa: E501
             icon="🚨",
         )
         return None
@@ -147,19 +138,19 @@ def handle_database_tab(db_conn):
     database_filter = st.session_state.database_filter
 
     if database_filter.random_selection:
-        database.display_random_data(db_conn, database_filter)
+        data.display_random_data(db_conn, database_filter)
     else:
-        database.display_filtered_data(db_conn, database_filter)
+        data.display_filtered_data(db_conn, database_filter)
 
     if not st.session_state.user_display == "":
         st.markdown(st.session_state.user_display)
         st.markdown("---")
 
     if not st.session_state.data.empty:
-        database.show_table(st.session_state.data)
+        data.show_table(st.session_state.data)
         st.download_button(
             "Download selection",
-            database.convert_df(st.session_state.data),
+            data.convert_df(st.session_state.data),
             "file.csv",
             "text/csv",
             key="download-csv",
