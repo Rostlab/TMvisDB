@@ -41,6 +41,11 @@ def fetch_membrane_annotations(selected_id: str):
     return annotation, uniprot_response
 
 
+def fetch_sequence_data(selected_id: str):
+    sequence_info_df = database.get_sequence_data_for_id(selected_id)
+    return sequence_info_df
+
+
 @dataclass
 class ProteinInfo:
     supplied_accession: str
@@ -61,7 +66,7 @@ class ProteinInfo:
     ):
         annotation, uniprot_info = fetch_membrane_annotations(selected_id)
 
-        sequence_info_df = database.get_sequence_data_for_id(selected_id)
+        sequence_info_df = fetch_sequence_data(selected_id)
 
         sequence, structure = api.alphafolddb_fetch_structure(
             uniprot_info.accession
