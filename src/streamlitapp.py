@@ -4,7 +4,15 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
-from app import data, faq, overview, visualization, about, sidebar, header
+from app import (
+    faq,
+    overview,
+    protein_list,
+    protein_vizualization,
+    about,
+    sidebar,
+    header,
+)
 from utils import database, api
 from utils.api import UniprotACCType
 from utils.protein_visualization import ColorScheme, VizFilter, Style
@@ -134,19 +142,19 @@ def handle_database_tab(db_conn):
     database_filter = st.session_state.database_filter
 
     if database_filter.random_selection:
-        data.display_random_data(db_conn, database_filter)
+        protein_list.display_random_data(db_conn, database_filter)
     else:
-        data.display_filtered_data(db_conn, database_filter)
+        protein_list.display_filtered_data(db_conn, database_filter)
 
     if not st.session_state.user_display == "":
         st.markdown(st.session_state.user_display)
         st.markdown("---")
 
     if not st.session_state.data.empty:
-        data.show_table(st.session_state.data)
+        protein_list.show_table(st.session_state.data)
         st.download_button(
             "Download selection",
-            data.convert_df(st.session_state.data),
+            protein_list.convert_df(st.session_state.data),
             "file.csv",
             "text/csv",
             key="download-csv",
@@ -166,7 +174,7 @@ def show_3d_visualization(db_conn, visualization_filter: VizFilter):
         protein_info = ProteinInfo.collect_for_id(
             db_conn, visualization_filter.selected_id, input_format
         )
-        visualization.create_visualization_for_id(
+        protein_vizualization.create_visualization_for_id(
             protein_info, visualization_filter.style
         )
     except Exception as e:

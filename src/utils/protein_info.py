@@ -9,6 +9,13 @@ from utils import membrane_annotation
 from utils.membrane_annotation import MembraneAnnotation, AnnotationSource
 
 
+def db_to_df(query_result: database.Sequence):
+    data = query_result.dicts()
+    df = pd.DataFrame(data)
+
+    return df
+
+
 def fetch_membrane_annotations(selected_id: str):
     annotation = MembraneAnnotation()
 
@@ -42,7 +49,7 @@ def fetch_membrane_annotations(selected_id: str):
 
 
 def fetch_sequence_data(selected_id: str):
-    sequence_info_df = database.get_sequence_data_for_id(selected_id)
+    sequence_info_df = db_to_df(database.get_sequence_data_for_id(selected_id))
     return sequence_info_df
 
 
