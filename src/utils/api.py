@@ -1,5 +1,4 @@
-from urllib.request import urlopen
-import requests
+import httpx
 import re
 from enum import Enum
 import logging
@@ -38,10 +37,14 @@ def get_af_structure(selected_id):
     """
     afdb_api_path = f"https://www.alphafold.ebi.ac.uk/api/prediction/{selected_id}"
     try:
-        afdb_json = requests.get(afdb_api_path).json()
+        afdb_response = httpx.get(afdb_api_path)
+        afdb_response.raise_for_status()
+        afdb_json = afdb_response.json()
         seq = afdb_json[0]["uniprotSequence"]
         afdb_pdb_path = afdb_json[0]["pdbUrl"]
-        afdb_file = urlopen(afdb_pdb_path).read().decode("utf-8")
+        afdb_pdb_response = httpx.get(afdb_pdb_path)
+        afdb_pdb_response.raise_for_status()
+        afdb_file = afdb_pdb_response.text
         return seq, afdb_file
     except Exception as e:
         logging.error(f"Error fetching AlphaFold structure: {e}")
@@ -60,10 +63,12 @@ def get_uniprot_tmvec(selected_id, input_type):
         "unknown": selected_id,
     }
 
-    url = f"https://rest.uniprot.org/uniprotkb/search?query={query_prefix.get(input_type, selected_id)} AND active:true &fields=id,accession,length,ft_transmem&format=json&size=1"  # noqa: E501
+    url = f"https://rest.uniprot.org/uniprotkb/search?query={query_prefix.get(input_type, selected_id)} AND active:true&fields=id,accession,length,ft_transmem&format=json&size=1"  # noqa: E501
 
     try:
-        body = requests.get(url).json()
+        response = httpx.get(url)
+        response.raise_for_status()
+        body = response.json()
     except Exception as e:
         logging.error(f"Error contacting {url}: \n\t{e}")
         return None, None, None, 0
@@ -89,6 +94,7 @@ def get_uniprot_tmvec(selected_id, input_type):
         return None, None, None, 0
 
 
+
 def get_tmalphafold_annotation(up_name, seq_length):
     """
     Fetches transmembrane annotation for a given protein name from TmAlphaFold.
@@ -96,10 +102,12 @@ def get_tmalphafold_annotation(up_name, seq_length):
     """
     url = f"https://tmalphafold.ttk.hu/api/tmdet/{up_name}.json"
     try:
-        body = requests.get(url).json()
+        response = httpx.get(url)
+        response.raise_for_status()
+        body = response.json()
     except Exception as e:
         logging.error(f"Error contacting {url}: \n\t{e}")
-        return None
+        return None, None
 
     tmaf_tm_vec = ["*"] * seq_length
 
