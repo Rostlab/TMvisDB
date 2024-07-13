@@ -47,7 +47,7 @@ Single proteins of TMvisDB can be selected for 3D-visualization of per-residue t
 
 - Website: [Streamlit](https://streamlit.io), [pandas](https://pandas.pydata.org)
 - Database: [MongoDB](https://www.mongodb.com), [pymongo](https://github.com/mongodb/mongo-python-driver)
-- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu), [stmol](https://github.com/napoles-uach/stmol)
+- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu)
 
 #### Development & Maintenance
 

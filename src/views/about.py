@@ -21,7 +21,7 @@ def software():
         "##### Software   \n"
         "- Website: [Streamlit](https://streamlit.io), [pandas](https://pandas.pydata.org)   \n"
         "- Database: [MongoDB](https://www.mongodb.com), [pymongo](https://github.com/mongodb/mongo-python-driver)  \n"
-        "- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu), [stmol](https://github.com/napoles-uach/stmol)"
+        "- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu)  \n"
     )
 
 

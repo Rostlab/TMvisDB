@@ -4,11 +4,11 @@ import os
 import pandas as pd
 import streamlit as st
 
-from app import (
+from views import (
     faq,
     overview,
     protein_list,
-    protein_vizualization,
+    protein_visualization,
     about,
     sidebar,
     header,
@@ -59,11 +59,7 @@ def collect_and_display_protein_info(db_conn, selected_id):
             )
         else:
             st.write(
-                f"Displaying protein with ID: {
-                    protein_info.uniprot_accession
-                    if protein_info.uniprot_accession is not None
-                    else selected_id
-                }"
+                f"Displaying protein with ID: {protein_info.uniprot_accession if protein_info.uniprot_accession is not None else selected_id}"
             )
 
     return protein_info
@@ -104,7 +100,7 @@ def initialize_database_connection():
     try:
         client = database.DATABASE.connect()
         return client
-    except sqlite3.OperationalError as e:
+    except sqlipte3.OperationalError as e:
         logging.error(f"Failed to connect to Sqlite. {str(e)}")
         st.error(
             "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: service+tmvisdb@rostlab.org",  # noqa: E501
@@ -174,7 +170,7 @@ def show_3d_visualization(db_conn, visualization_filter: VizFilter):
         protein_info = ProteinInfo.collect_for_id(
             db_conn, visualization_filter.selected_id, input_format
         )
-        protein_vizualization.create_visualization_for_id(
+        protein_visualization.create_visualization_for_id(
             protein_info, visualization_filter.style
         )
     except Exception as e:
@@ -214,16 +210,27 @@ def maintenance_mode():
     )
 
 
+def _setup_logging():
+    log_level = os.getenv("LOG_LEVEL", "ERROR").upper()
+    numeric_log_level = getattr(logging, log_level, logging.ERROR)
+    logging.basicConfig(level=numeric_log_level)
+
+
 def main():
     st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
-    logging.basicConfig(level=logging.WARNING)
+
+    # Debug logging for the maintenance mode environment variable
+    maintenance_mode_enabled = os.getenv("MAINTENANCE_MODE", "false").lower()
+    logging.debug(f"MAINTENANCE_MODE: {maintenance_mode_enabled}")
 
     acknowledge_statistics_warning()
 
     if st.session_state.user_acknowledged_stats:
         # Header
         header.title()
-        if os.getenv("MAINTENANCE_MODE", "false").lower() == "true":
+
+        if maintenance_mode_enabled == "true":
+            logging.debug("Entering maintenance mode")
             maintenance_mode()
             return
 

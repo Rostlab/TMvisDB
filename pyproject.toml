@@ -9,9 +9,10 @@ authors = [
 dependencies = [
     "py3Dmol>=2.0.3",
     "streamlit>=1.27.2",
-    "pandas>=2.0.3",   
+    "pandas>=2.0.3",
     "peewee>=3.17.5",
     "httpx>=0.27.0",
+    "streamlit-aggrid>=1.0.5",
 ]
 requires-python = ">=3.10"
 readme = "README.md"

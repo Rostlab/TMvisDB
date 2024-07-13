@@ -23,6 +23,7 @@ ARG STREAMLIT_PORT=8501
 ARG GIT_HASH
 
 COPY src /project/src
+COPY assets /project/assets
 
 RUN useradd -m user && chown -R user:user /project
 
@@ -36,6 +37,7 @@ ENV GIT_HASH=${GIT_HASH:-dev}
 ENV STREAMLIT_PORT=${STREAMLIT_PORT}
 ENV DATABASE_URL="sqlite:///data/tmvis.db"
 ENV MAINTENANCE_MODE="false"
+ENV LOG_LEVEL="ERROR"
 
 WORKDIR /project
 

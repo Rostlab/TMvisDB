@@ -5,26 +5,25 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:ca2761b37ee58d8a75f45c9c09d6f02e8d813e9069eec2ed8c601f88f2ebca8e"
+content_hash = "sha256:346d6c426e5bf0f4555addcf6606b7c36bc31c0e514c2b08b4531bd8b46dc6ba"
 
 [[package]]
 name = "altair"
-version = "5.3.0"
-requires_python = ">=3.8"
-summary = "Vega-Altair: A declarative statistical visualization library for Python."
+version = "4.2.2"
+requires_python = ">=3.7"
+summary = "Altair: A declarative statistical visualization library for Python."
 groups = ["default"]
 dependencies = [
+    "entrypoints",
     "jinja2",
     "jsonschema>=3.0",
     "numpy",
-    "packaging",
-    "pandas>=0.25",
+    "pandas>=0.18",
     "toolz",
-    "typing-extensions>=4.0.1; python_version < \"3.11\"",
 ]
 files = [
-    {file = "altair-5.3.0-py3-none-any.whl", hash = "sha256:7084a1dab4d83c5e7e5246b92dc1b4451a6c68fd057f3716ee9d315c8980e59a"},
-    {file = "altair-5.3.0.tar.gz", hash = "sha256:5a268b1a0983b23d8f9129f819f956174aa7aea2719ed55a52eba9979b9f6675"},
+    {file = "altair-4.2.2-py3-none-any.whl", hash = "sha256:8b45ebeaf8557f2d760c5c77b79f02ae12aee7c46c27c06014febab6f849bc87"},
+    {file = "altair-4.2.2.tar.gz", hash = "sha256:39399a267c49b30d102c10411e67ab26374156a84b1aeb9fcd15140429ba49c5"},
 ]
 
 [[package]]
@@ -413,6 +412,17 @@ groups = ["dev"]
 files = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
+]
+
+[[package]]
+name = "entrypoints"
+version = "0.4"
+requires_python = ">=3.6"
+summary = "Discover and load entry points from installed packages."
+groups = ["default"]
+files = [
+    {file = "entrypoints-0.4-py3-none-any.whl", hash = "sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f"},
+    {file = "entrypoints-0.4.tar.gz", hash = "sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4"},
 ]
 
 [[package]]
@@ -1464,6 +1474,16 @@ files = [
 ]
 
 [[package]]
+name = "python-decouple"
+version = "3.8"
+summary = "Strict separation of settings from code."
+groups = ["default"]
+files = [
+    {file = "python-decouple-3.8.tar.gz", hash = "sha256:ba6e2657d4f376ecc46f77a3a615e058d93ba5e465c01bbe57289bfb7cce680f"},
+    {file = "python_decouple-3.8-py3-none-any.whl", hash = "sha256:d0d45340815b25f4de59c974b855bb38d03151d81b037d9e3f463b0c9f8cbd66"},
+]
+
+[[package]]
 name = "python-json-logger"
 version = "2.0.7"
 requires_python = ">=3.6"
@@ -1883,6 +1903,23 @@ dependencies = [
 files = [
     {file = "streamlit-1.36.0-py2.py3-none-any.whl", hash = "sha256:3399a33ea5faa26c05dd433d142eefe68ade67e9189a9e1d47a1731ae30a1c42"},
     {file = "streamlit-1.36.0.tar.gz", hash = "sha256:a12af9f0eb61ab5832f438336257b1ec20eb29d8e0e0c6b40a79116ba939bc9c"},
+]
+
+[[package]]
+name = "streamlit-aggrid"
+version = "1.0.5"
+requires_python = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,>=3.8"
+summary = "Streamlit component implementation of ag-grid"
+groups = ["default"]
+dependencies = [
+    "altair<5",
+    "pandas>=1.2",
+    "python-decouple<4.0,>=3.6",
+    "streamlit>=0.87.0",
+]
+files = [
+    {file = "streamlit_aggrid-1.0.5-py3-none-any.whl", hash = "sha256:ac0a58c1d39418d139da5623c4c8a0a3aa86463c217a41c837e2ef52c8537a34"},
+    {file = "streamlit_aggrid-1.0.5.tar.gz", hash = "sha256:12e17f88d66e110e5d68504614a4b933f7dca31e40448396252d889a10e761b6"},
 ]
 
 [[package]]

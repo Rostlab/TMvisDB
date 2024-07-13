@@ -1,9 +1,10 @@
 import logging
 
 import py3Dmol
-from stmol import showmol
 import streamlit as st
 from st_aggrid import AgGrid
+
+from utils.protein_visualization import showmol
 
 
 from utils.protein_visualization import (

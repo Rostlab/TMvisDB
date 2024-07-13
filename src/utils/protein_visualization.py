@@ -2,6 +2,9 @@ import pandas as pd
 from enum import Enum
 from dataclasses import dataclass
 
+import streamlit.components.v1 as components
+import py3Dmol
+
 
 # Enum for Protein Styles
 class ProteinStyle(Enum):
@@ -149,3 +152,22 @@ def map_annotation_to_color(annotation: list[str]):
             color_map.get(res_type, ColorCode.OUTSIDE.value).split()
         )
     return atom_color
+
+
+def showmol(mol_obj, height=500, width=500):
+    """Shows the Py3DMOL object.
+
+    Parameters
+    ----------
+    obj: Py3DMOL object
+        Already existing Py3DMOL object, which can be created using the makeobj function.
+    height: Integer, default 500
+        Is the height of viwer window.
+    width: Integer, default 500
+        Is the width of wiewer window.
+
+    Returns
+    -------
+    None.
+    """
+    components.html(mol_obj._make_html(), height=height, width=width, scrolling=False)
