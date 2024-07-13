@@ -22,7 +22,7 @@ def db_error():
 
 
 def collect_and_display_protein_info(db_conn, selected_id):
-    uniprot_acc_type = api.check_input_format(selected_id)
+    uniprot_acc_type = api.uniprot_get_input_type(selected_id)
 
     if uniprot_acc_type == UniprotACCType.UNKNOWN:
         st.error(
@@ -31,9 +31,7 @@ def collect_and_display_protein_info(db_conn, selected_id):
         )
         return None
 
-    protein_info: ProteinInfo = ProteinInfo.collect_for_id(
-        db_conn, selected_id, uniprot_acc_type
-    )
+    protein_info: ProteinInfo = ProteinInfo.collect_for_id(selected_id)
     if not protein_info.has_annotations:
         st.warning(
             "We found no transmembrane annotation; neither predicted nor in UniProt or TmAlphaFold.",  # noqa: E501
@@ -97,10 +95,8 @@ def initialize_database_connection():
 
     try:
         client = database.DATABASE.connect()
-        return client 
-    except (
-        sqlite3.OperationalError 
-    ) as e:
+        return client
+    except sqlite3.OperationalError as e:
         logging.error(f"Failed to connect to Sqlite. {str(e)}")
         st.error(
             "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: service+tmvisdb@rostlab.org",  # noqa: E501
@@ -166,7 +162,7 @@ def show_3d_visualization(db_conn, visualization_filter: VizFilter):
         return
 
     try:
-        input_format = api.check_input_format(visualization_filter.selected_id)
+        input_format = api.uniprot_get_input_type(visualization_filter.selected_id)
         protein_info = ProteinInfo.collect_for_id(
             db_conn, visualization_filter.selected_id, input_format
         )

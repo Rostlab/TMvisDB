@@ -15,7 +15,7 @@ class AnnotationSource(Enum):
     TOPDB = "topdb"
     TMBED = "tmbed"
     UNIPROT = "uniprot"
-    ALPHAFOLD = "alphafold"
+    TMALPHAFOLD = "tmalphafold"
 
 
 DISPLAY_NAMES = {
@@ -23,12 +23,11 @@ DISPLAY_NAMES = {
     AnnotationSource.TOPDB: "TopDB Annotation",
     AnnotationSource.TMBED: "TMbed Prediction",
     AnnotationSource.UNIPROT: "UniProt Annotation",
-    AnnotationSource.ALPHAFOLD: "TmAlphaFold Annotation",
+    AnnotationSource.TMALPHAFOLD: "TmAlphaFold Annotation",
 }
 
 
 def annotations_from_db(annotations: Annotation):
-
     parsed_annotations = defaultdict(list)
     reference_urls = dict()
 
@@ -59,7 +58,6 @@ class MembraneAnnotation:
 
 
 def construct_df_from_annotation(annotation: MembraneAnnotation, sequence: list[str]):
-
     return pd.DataFrame(
         zip(
             sequence,

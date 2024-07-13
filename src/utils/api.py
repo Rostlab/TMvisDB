@@ -2,6 +2,37 @@ import httpx
 import re
 from enum import Enum
 import logging
+from dataclasses import dataclass
+
+from utils.annotations import ResidueAnnotation
+
+
+def _fetch_api_data(url):
+    """
+    Fetches data from a remote API and determines the response type based on the Content-Type header.
+
+    Args:
+        url (str): The URL to fetch data from.
+
+    Returns:
+        The response data in the appropriate format (JSON or text), or None if an error occurs.
+    """
+    try:
+        response = httpx.get(url)
+        response.raise_for_status()
+
+        content_type = response.headers.get("Content-Type", "")
+        if "application/json" in content_type:
+            return response.json()
+        elif "text/plain" in content_type or "application/octet-stream" in content_type:
+            return response.text
+        else:
+            logging.error(f"Unsupported Content-Type: {content_type}")
+            return None
+    except Exception as e:
+        logging.error(f"Error contacting {url}: \n\t{e}")
+        return None
+
 
 ## check if ID input format is correct
 ACCESSION_NUMBER_RE = re.compile(
@@ -16,7 +47,15 @@ class UniprotACCType(Enum):
     UNKNOWN = -1
 
 
-def check_input_format(selected_id):
+@dataclass
+class UniprotResponse:
+    accession: str
+    name: str
+    sequence_length: int
+    membrane_annotations: list[ResidueAnnotation]
+
+
+def uniprot_get_input_type(selected_id):
     """
     Checks if the input ID matches expected formats: uniprot_id or uniprot_acc_num.
     Returns the type of ID format or 'unknown' if the format is not recognized.
@@ -30,93 +69,113 @@ def check_input_format(selected_id):
         return UniprotACCType.UNKNOWN
 
 
-def get_af_structure(selected_id):
+def uniprot_query_url(selected_id, input_type):
     """
-    Fetches the AlphaFold structure for a given ID from the AlphaFold DB API.
-    Returns the sequence and the associated PDB file content.
+    Constructs the URL for querying the UniProt database.
     """
-    afdb_api_path = f"https://www.alphafold.ebi.ac.uk/api/prediction/{selected_id}"
-    try:
-        afdb_response = httpx.get(afdb_api_path)
-        afdb_response.raise_for_status()
-        afdb_json = afdb_response.json()
-        seq = afdb_json[0]["uniprotSequence"]
-        afdb_pdb_path = afdb_json[0]["pdbUrl"]
-        afdb_pdb_response = httpx.get(afdb_pdb_path)
-        afdb_pdb_response.raise_for_status()
-        afdb_file = afdb_pdb_response.text
-        return seq, afdb_file
-    except Exception as e:
-        logging.error(f"Error fetching AlphaFold structure: {e}")
-        return None, None
-
-
-def get_uniprot_tmvec(selected_id, input_type):
-    """
-    Fetches the transmembrane vector information for a given ID from the UniProt database.
-    Returns relevant information or default values in case of errors.
-    """
-    # Construct URL based on the input type
     query_prefix = {
         "uniprot_acc_num": f"accession:{selected_id}",
         "uniprot_id": f"id:{selected_id}",
         "unknown": selected_id,
     }
 
-    url = f"https://rest.uniprot.org/uniprotkb/search?query={query_prefix.get(input_type, selected_id)} AND active:true&fields=id,accession,length,ft_transmem&format=json&size=1"  # noqa: E501
+    return f"https://rest.uniprot.org/uniprotkb/search?query={query_prefix.get(input_type, selected_id)} AND active:true&fields=id,accession,length,ft_transmem&format=json&size=1"
 
-    try:
-        response = httpx.get(url)
-        response.raise_for_status()
-        body = response.json()
-    except Exception as e:
-        logging.error(f"Error contacting {url}: \n\t{e}")
-        return None, None, None, 0
 
-    if body.get("results") and len(body["results"]) > 0:
-        body = body["results"][0]
-        up_acc = body["primaryAccession"]
-        up_name = body["uniProtkbId"]
-        seq_length = body["sequence"]["length"]
-        UP_TM_vec = ["*"] * seq_length
+def uniprot_parse_response(body):
+    """
+    Parses the UniProt API response and extracts relevant information.
+    """
 
-        for entry in body.get("features", []):
+    annotations = []
+    if body and body.get("results") and len(body["results"]) > 0:
+        result = body["results"][0]
+        up_acc = result["primaryAccession"]
+        up_name = result["uniProtkbId"]
+        seq_length = result["sequence"]["length"]
+
+        for entry in result.get("features", []):
             if entry["type"] == "Transmembrane":
-                if "Beta" in entry["description"]:
-                    annotation = "BS"
-                elif "Helical" in entry["description"]:
-                    annotation = "AH"
-                pos_start = int(entry["location"]["start"]["value"]) - 1
+                label = "BS" if "Beta" in entry["description"] else "AH"
+                pos_start = int(entry["location"]["start"]["value"])
                 pos_end = int(entry["location"]["end"]["value"])
-                UP_TM_vec[pos_start:pos_end] = [annotation] * (pos_end - pos_start)
-        return up_acc, up_name, UP_TM_vec, seq_length
+                annotations.append(ResidueAnnotation(pos_start, pos_end, label))
+        return UniprotResponse(
+            accession=up_acc,
+            name=up_name,
+            sequence_length=seq_length,
+            membrane_annotations=annotations,
+        )
     else:
-        return None, None, None, 0
+        return None
 
 
+def uniprot_fetch_annotation(selected_id):
+    """
+    Fetches the transmembrane vector information for a given ID from the UniProt database.
+    Returns relevant information or default values in case of errors.
+    """
+    input_type = uniprot_get_input_type(selected_id)
+    url = uniprot_query_url(selected_id, input_type)
+    body = _fetch_api_data(url)
+    return uniprot_parse_response(body)
 
-def get_tmalphafold_annotation(up_name, seq_length):
+
+def tmalphafold_query_url(up_name):
+    """
+    Constructs the URL for querying the TmAlphaFold database.
+    """
+    return f"https://tmalphafold.ttk.hu/api/tmdet/{up_name}.json"
+
+
+def tmalphafold_parse_response(body):
+    """
+    Parses the TmAlphaFold API response and extracts relevant information.
+    """
+    annotations: list[ResidueAnnotation] = []
+
+    if body and "CHAIN" in body:
+        for entry in body["CHAIN"][0]["REGION"]:
+            if entry["_attributes"]["type"] == "M":
+                annotations.append(
+                    ResidueAnnotation(
+                        int(entry["_attributes"]["seq_beg"]),
+                        int(entry["_attributes"]["seq_end"]),
+                        "AH",
+                    )
+                )
+        return annotations
+    return annotations if len(annotations) > 0 else None
+
+
+def tmalphafold_fetch_annotation(up_name):
     """
     Fetches transmembrane annotation for a given protein name from TmAlphaFold.
     Returns the annotation or a default value in case of errors.
     """
-    url = f"https://tmalphafold.ttk.hu/api/tmdet/{up_name}.json"
-    try:
-        response = httpx.get(url)
-        response.raise_for_status()
-        body = response.json()
-    except Exception as e:
-        logging.error(f"Error contacting {url}: \n\t{e}")
+    url = tmalphafold_query_url(up_name)
+    body = _fetch_api_data(url)
+    tmaf_annotations = tmalphafold_parse_response(body)
+    return tmaf_annotations
+
+
+def alphafolddb_fetch_structure(selected_id):
+    """
+    Fetches the AlphaFold structure for a given ID from the AlphaFold DB API.
+    Returns the sequence and the associated PDB file content.
+    """
+    afdb_api_path = f"https://www.alphafold.ebi.ac.uk/api/prediction/{selected_id}"
+    afdb_json = _fetch_api_data(afdb_api_path)
+
+    if not afdb_json:
         return None, None
 
-    tmaf_tm_vec = ["*"] * seq_length
+    try:
+        seq = afdb_json[0]["uniprotSequence"]
+        afdb_pdb_path = afdb_json[0]["pdbUrl"]
+        afdb_file = _fetch_api_data(afdb_pdb_path)
+        return seq, afdb_file
 
-    if "CHAIN" in body:
-        for entry in body["CHAIN"][0]["REGION"]:
-            if entry["_attributes"]["type"] == "M":
-                pos_start = int(entry["_attributes"]["seq_beg"]) - 1
-                pos_end = int(entry["_attributes"]["seq_end"])
-                tmaf_tm_vec[pos_start:pos_end] = ["AH"] * (pos_end - pos_start)
-        return tmaf_tm_vec, url
-    else:
+    except (KeyError, IndexError) as e:
+        logging.error(f"Error processing AlphaFold structure data: {e}")
         return None, None

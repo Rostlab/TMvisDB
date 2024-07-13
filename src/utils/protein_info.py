@@ -5,35 +5,30 @@ from dataclasses import dataclass
 import pandas as pd
 
 from utils import database, api
-from utils.api import UniprotACCType
 from utils import annotations
 from utils.annotations import MembraneAnnotation, AnnotationSource
 
 
-def fetch_membrane_annotations(selected_id: str, uniprot_acc_type: UniprotACCType):
+def fetch_membrane_annotations(selected_id: str):
     annotation = MembraneAnnotation()
 
-    (
-        uniprot_accession,
-        uniprot_name,
-        uniprot_annotation,
-        uniprot_seq_length,
-    ) = api.get_uniprot_tmvec(selected_id, uniprot_acc_type)
+    uniprot_response = api.uniprot_fetch_annotation(selected_id)
 
-    if uniprot_annotation is not None:
-        annotation[AnnotationSource.UNIPROT] = uniprot_annotation
+    if uniprot_response is not None:
+        annotation[AnnotationSource.UNIPROT] = uniprot_response.membrane_annotations
         annotation.reference_urls[AnnotationSource.UNIPROT] = (
             f"https://www.uniprot.org/uniprotkb/{uniprot_accession}/entry"
         )
 
-    alphafold_annotation, url = api.get_tmalphafold_annotation(
-        uniprot_name if uniprot_name is not None else selected_id,
-        uniprot_seq_length,
+    tmalphafold_annotation = api.tmalphafold_fetch_annotation(
+        uniprot_response.name if uniprot_response.name is not None else selected_id
     )
 
-    if alphafold_annotation is not None:
-        annotation[AnnotationSource.ALPHAFOLD] = alphafold_annotation
-        annotation.reference_urls[AnnotationSource.ALPHAFOLD] = url
+    if tmalphafold_annotation is not None:
+        annotation[AnnotationSource.TMALPHAFOLD] = tmalphafold_annotation
+        annotation.reference_urls[AnnotationSource.TMALPHAFOLD] = (
+            f"https://tmalphafold.ttk.hu/entry/{uniprot_response.accession if uniprot_response.accession is not None else selected_id}"
+        )
 
     db_annotations = database.get_membrane_annotation_for_id(selected_id)
     parsed_db_annoations, parsed_db_refs = annotations.annotations_from_db(
@@ -43,7 +38,7 @@ def fetch_membrane_annotations(selected_id: str, uniprot_acc_type: UniprotACCTyp
     annotation.annotations |= parsed_db_annoations
     annotation.reference_urls |= parsed_db_refs
 
-    return annotation, uniprot_accession, uniprot_name
+    return annotation, uniprot_response
 
 
 @dataclass
@@ -62,26 +57,24 @@ class ProteinInfo:
 
     @staticmethod
     def collect_for_id(
-        db_conn,
         selected_id: str,
     ):
-
-        db_annotation, uniprot_name, uniprot_accession = (
-            database.get_membrane_annotation_for_id(selected_id)
-        )
+        annotation, uniprot_info = fetch_membrane_annotations(selected_id)
 
         sequence_info_df = database.get_sequence_data_for_id(selected_id)
 
-        sequence, structure = api.get_af_structure(
-            uniprot_accession if uniprot_accession is not None else selected_id
+        sequence, structure = api.alphafolddb_fetch_structure(
+            uniprot_info.accession
+            if uniprot_info.accession is not None
+            else selected_id
         )
 
         return ProteinInfo(
             supplied_accession=selected_id,
-            uniprot_accession=uniprot_accession,
-            uniprot_name=uniprot_name,
+            uniprot_accession=uniprot_info.accession,
+            uniprot_name=uniprot_info.name,
             sequence=sequence,
             structure=structure,
-            annotation=db_annotation,
+            annotation=annotation,
             info_df=sequence_info_df,
         )
