@@ -35,6 +35,7 @@ ENV PATH="/project/.venv/bin:$PATH"
 ENV GIT_HASH=${GIT_HASH:-dev}
 ENV STREAMLIT_PORT=${STREAMLIT_PORT}
 ENV DATABASE_URL="sqlite:///data/tmvis.db"
+ENV MAINTENANCE_MODE="false"
 
 WORKDIR /project
 

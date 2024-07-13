@@ -1,5 +1,5 @@
 import logging
-import sqlite3
+import os
 
 import pandas as pd
 import streamlit as st
@@ -185,6 +185,35 @@ def show_3d_visualization(db_conn, visualization_filter: VizFilter):
         )
 
 
+def maintenance_mode():
+    st.title("We'll be back soon!")
+    st.image(
+        "https://via.placeholder.com/600x200.png?text=Maintenance+Mode",
+        use_column_width=True,
+    )
+    st.warning(
+        "The TMvisDB is currently undergoing maintenance to improve your experience. Please check back later.",
+        icon="🚧",
+    )
+    st.info(
+        """
+        **Why am I seeing this?**
+
+        - We are performing essential maintenance or upgrades.
+        - We apologize for the inconvenience and appreciate your patience.
+
+        **When will the service be back?**
+
+        - We expect the service to be restored within a couple of days.
+        - Please check back tomorrow.
+
+        **Need assistance?**
+
+        - If you have any questions, please contact us at [service+tmvisdb@rostlab.org](mailto:service+tmvisdb@rostlab.org).
+        """
+    )
+
+
 def main():
     st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
     logging.basicConfig(level=logging.WARNING)
@@ -192,15 +221,18 @@ def main():
     acknowledge_statistics_warning()
 
     if st.session_state.user_acknowledged_stats:
-        db_conn = initialize_database_connection()
+        # Header
+        header.title()
+        if os.getenv("MAINTENANCE_MODE", "false").lower() == "true":
+            maintenance_mode()
+            return
 
+        db_conn = initialize_database_connection()
         initialize_session_state()
 
         # Sidebar
         sidebar.display_sidebar()
 
-        # Header
-        header.title()
         tab_overview, tab_database, tab_visualization, tab_faq, tab_about = st.tabs(
             ["Overview", "Database", "Visualization", "FAQ", "About"]
         )
