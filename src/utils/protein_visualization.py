@@ -1,5 +1,5 @@
 import pandas as pd
-from enum import Enum, auto
+from enum import Enum
 from dataclasses import dataclass
 
 

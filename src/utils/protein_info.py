@@ -1,7 +1,6 @@
 # Copyright 2023 RostLab.
 # SPDX-License-Identifier: 	AGPL-3.0-or-later
-from dataclasses import dataclass, field, fields
-import logging
+from dataclasses import dataclass
 
 import pandas as pd
 

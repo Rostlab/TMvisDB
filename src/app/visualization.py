@@ -3,7 +3,6 @@ import logging
 import py3Dmol
 from stmol import showmol
 import streamlit as st
-import pandas as pd
 from st_aggrid import AgGrid
 
 

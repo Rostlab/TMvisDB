@@ -13,7 +13,7 @@ from .database import Annotation
 class AnnotationSource(Enum):
     MEMBRANOME = "membranome"
     TOPDB = "topdb"
-    TMBED = "tmbdb"
+    TMBED = "tmbed"
     UNIPROT = "uniprot"
     ALPHAFOLD = "alphafold"
 
