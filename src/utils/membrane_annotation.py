@@ -57,53 +57,32 @@ class MembraneAnnotation:
     reference_urls: dict[AnnotationSource, str] = field(default_factory=dict)
 
 
-def construct_df_from_annotation(annotation: MembraneAnnotation, sequence: list[str]):
+def construct_df_from_annotation(annotation: MembraneAnnotation, sequence: str):
     return pd.DataFrame(
         zip(
-            sequence,
+            list(sequence),
             *[
-                ANNOTATION_HANDLER_MAP[source](
-                    sequence, annotation.annotations.get(source)
+                construct_annotation_vector(
+                    annotation.annotations[source], len(sequence)
                 )
                 for source in annotation.annotations
+                if annotation.annotations[source] is not None
+                and len(annotation.annotations[source]) > 0
             ],
         ),
         columns=["Sequence"]
-        + [DISPLAY_NAMES[source] for source in annotation.annotations],
+        + [
+            DISPLAY_NAMES[source]
+            for source in annotation.annotations
+            if annotation.annotations[source] is not None
+            and len(annotation.annotations[source]) > 0
+        ],
     )
 
 
-# TODO Fix this
-
-
-def construct_topdb_annotation(item: None | dict[str, str | dict[str, str]]):
-    topdb_value = item.get("topdb", {}).get("TopDB_Entry", None)
-    return None if not topdb_value else list(topdb_value)
-
-
-def construct_membranome_annotation(item: None | dict[str, str | dict[str, str]]):
-    """
-    Extracts Membranome data from the given item.
-    """
-    if "membranomedb" not in item:
-        return None
-
-    seq_length = int(item["seq_length"]) - 1
-    pos_start = int(item["membranomedb"]["tm_seq_start"]) - 1
-    pos_end = int(item["membranomedb"]["tm_seq_end"]) - 1
-
-    membdb_annotation = ["*"] * seq_length
-    membdb_annotation[pos_start:pos_end] = ["AH"] * (pos_end - pos_start + 1)
-
-    return membdb_annotation
-
-
-def construct_tmembd_annotation(item: None | dict[str, str | dict[str, str]]):
-    pass
-
-
-ANNOTATION_HANDLER_MAP = {
-    "membranome": construct_membranome_annotation,
-    "topdb": construct_topdb_annotation,
-    "tembed": construct_tmembd_annotation,
-}
+def construct_annotation_vector(annotations: list[ResidueAnnotation], seuence_len: int):
+    annotation_vector = ["*"] * seuence_len
+    for annotation in annotations:
+        for i in range(annotation.start - 1, annotation.end):
+            annotation_vector[i] = annotation.label
+    return annotation_vector

@@ -5,8 +5,8 @@ from dataclasses import dataclass
 import pandas as pd
 
 from utils import database, api
-from utils import annotations
-from utils.annotations import MembraneAnnotation, AnnotationSource
+from utils import membrane_annotation
+from utils.membrane_annotation import MembraneAnnotation, AnnotationSource
 
 
 def fetch_membrane_annotations(selected_id: str):
@@ -31,7 +31,7 @@ def fetch_membrane_annotations(selected_id: str):
         )
 
     db_annotations = database.get_membrane_annotation_for_id(selected_id)
-    parsed_db_annoations, parsed_db_refs = annotations.annotations_from_db(
+    parsed_db_annoations, parsed_db_refs = membrane_annotation.annotations_from_db(
         db_annotations
     )
 

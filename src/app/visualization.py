@@ -14,7 +14,8 @@ from utils import protein_visualization
 
 from utils.protein_info import ProteinInfo
 from utils.protein_visualization import Style, ColorScheme
-from utils import annotations
+from utils import membrane_annotation
+from utils.membrane_annotation import MembraneAnnotation, DISPLAY_NAMES
 
 
 def display_legend(color_scheme: ColorScheme, has_no_pred):
@@ -38,35 +39,31 @@ def display_legend(color_scheme: ColorScheme, has_no_pred):
 
 
 def display_links(protein_info: ProteinInfo):
-    # TOD refactor based on links
     """Displays links to various resources for further evaluation."""
     links = [
-        f"- UniProt entry: [{protein_info.uniprot_accession}](https://www.uniprot.org/uniprotkb/{protein_info.uniprot_accession}/entry)",
         f"- Evaluate protein-specific phenotype predictions: [LambdaPP](https://lambda.predictprotein.org/o/{protein_info.uniprot_accession})",
         "- Generate structural alignments: [Foldseek](https://search.foldseek.com/search)",
-        "- Experimentally derived topology information: [Topology Data Bank of Transmembrane Proteins](https://topdb.unitmp.org//)",  # noqa: E501
-        "- Membranome database for single-helix transmembrane proteins: [Membranome](https://membranome.org/)",
-        f"- Alpha-helical transmembrane proteins: [TmAlphaFold database](https://tmalphafold.ttk.hu/entry/{selected_id})",
-    ]
+    ] + list(protein_info.annotation.reference_urls.items)
 
     st.markdown("Resources to evaluate your selection further:")
     st.markdown("\n".join(links))
 
 
-def format_available_annotations(annotations):
-
-    # TODO refactor according to sources
-
+def available_annotations_human_readable(annotation: MembraneAnnotation):
     def prefix_annotation(annotation):
         """Prefixes the annotation with 'a' or 'an'."""
         first_word = annotation.split()[0].lower()
         prefix = "an" if first_word[0] in ["a", "e", "i", "o", "u"] else "a"
         return f"{prefix} {annotation.title()}"
 
-    if not annotations:
+    if annotation is None or not annotation.has_annotations:
         return "Found no available annotations."
     else:
-        formatted_annotations = [prefix_annotation(ann) for ann in annotations]
+        formatted_annotations = [
+            prefix_annotation(annotation=DISPLAY_NAMES[ann])
+            for ann in annotation.annotations
+            if annotation.annotations[ann] is not None
+        ]
         if len(formatted_annotations) == 1:
             connected = formatted_annotations[0]
         elif len(formatted_annotations) == 2:
@@ -84,16 +81,14 @@ def display_membrane_annotation(protein_info: ProteinInfo):
         st.caption("Could not find any annotations for this protein.")
         return
 
-    pred_table = annotations.construct_df_from_annotation(
+    pred_table = membrane_annotation.construct_df_from_annotation(
         protein_info.annotation, protein_info.sequence
     )
     styled_table = pred_table.T.style.apply(
         protein_visualization.color_prediction, axis=0
     )
 
-    st.write(
-        format_available_annotations(protein_info.annotation.available_annotations)
-    )
+    st.write(available_annotations_human_readable(protein_info.annotation))
 
     st.write(styled_table)
 

@@ -4,7 +4,7 @@ from enum import Enum
 import logging
 from dataclasses import dataclass
 
-from utils.annotations import ResidueAnnotation
+from utils.membrane_annotation import ResidueAnnotation
 
 
 def _fetch_api_data(url):
