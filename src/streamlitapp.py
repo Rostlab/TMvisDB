@@ -280,7 +280,7 @@ def main():
                 about.handle_about()
 
         finally:
-            if db_conn is not None:
+            if db_conn is not None and not db_conn.is_closed():
                 db_conn.close()
 
 
