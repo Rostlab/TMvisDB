@@ -38,6 +38,23 @@ DATABASE = SqliteDatabase(
 )
 
 
+def initialize_database_connection():
+    DATABASE.connect()
+    DATABASE.execute_sql("PRAGMA cache_size = -2000")  # Set cache size to 2000KB
+    DATABASE.execute_sql("PRAGMA journal_mode = WAL")  # Set journal mode to WAL
+    DATABASE.execute_sql(
+        "PRAGMA synchronous = NORMAL"
+    )  # Set synchronous mode to NORMAL
+    DATABASE.execute_sql(
+        "PRAGMA temp_store = MEMORY"
+    )  # Store temporary tables in memory
+    DATABASE.execute_sql(
+        "PRAGMA mmap_size = 268435456"
+    )  # Use memory-mapped I/O for performance
+
+    return DATABASE
+
+
 class BaseModel(Model):
     class Meta:
         database = DATABASE
@@ -50,19 +67,27 @@ class Organism(BaseModel):
     super_kingdom = CharField(index=True)
     clade = CharField(index=True, null=True)
 
+    class Meta:
+        indexes = (
+            (
+                ("super_kingdom", "clade"),
+                False,
+            ),  # Composite index on super_kingdom and clade
+        )
+
 
 class Sequence(BaseModel):
     id = AutoField(primary_key=True)
     uniprot_id = CharField()
     uniprot_accession = CharField(index=True, unique=True)
-    organism = ForeignKeyField(Organism, backref="sequences")
+    organism = ForeignKeyField(Organism, backref="sequences", index=True)
     sequence = TextField()
     seq_length = IntegerField()
 
 
 class TMInfo(BaseModel):
     id = AutoField(primary_key=True)
-    sequence = ForeignKeyField(Sequence, backref="tm_info")
+    sequence = ForeignKeyField(Sequence, backref="tm_info", index=True)
     tm_helix_count = IntegerField()
     tm_helix_percent = FloatField()
     tm_strand_count = IntegerField()
@@ -74,10 +99,18 @@ class TMInfo(BaseModel):
     has_beta_strand = BooleanField()
     has_signal = BooleanField()
 
+    class Meta:
+        indexes = (
+            (
+                ("has_alpha_helix", "has_beta_strand", "has_signal"),
+                False,
+            ),  # Composite index
+        )
+
 
 class Annotation(BaseModel):
     id = AutoField(primary_key=True)
-    sequence = ForeignKeyField(Sequence, backref="annotations")
+    sequence = ForeignKeyField(Sequence, backref="annotations", index=True)
     start = IntegerField()
     end = IntegerField()
     label = CharField(
@@ -87,6 +120,14 @@ class Annotation(BaseModel):
     source_db = CharField(choices=["topdb", "membranome", "tmvis"])
     source_db_ref = CharField(null=True)
     source_db_url = CharField(max_length=400, null=True)
+
+    class Meta:
+        indexes = (
+            (
+                ("sequence", "start", "end"),
+                False,
+            ),  # Composite index on sequence, start, and end
+        )
 
 
 @dataclass
@@ -116,7 +157,7 @@ class DBFilter:
                 combined_filters = reduce(and_, filters)
                 query = query.where(combined_filters)
 
-        query = query.join(TMInfo).join(Organism)
+        query = query.join(TMInfo).switch(Sequence).join(Organism)
 
         if self.random_selection:
             query = query.order_by(fn.Random())
@@ -166,10 +207,8 @@ class DBFilter:
 
 
 def get_sequence_data(db_filter: DBFilter):
-    query = db_filter.construct_query().dicts()
-    if query is not None:
-        return pd.DataFrame(query)
-    return None
+    query = db_filter.construct_query()
+    return query
 
 
 def get_sequence_data_for_id(selected_id: str):

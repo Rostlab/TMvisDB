@@ -68,16 +68,16 @@ def show_table(df: pd.DataFrame):
 
 
 @st.cache_data(ttl=60, show_spinner=False)
-def display_random_data(_db_conn, db_filter: DBFilter):
+def display_random_data(db_filter: DBFilter):
     with st.spinner("Loading random data..."):
-        query = database.get_filtered_data(_db_conn, db_filter)
+        query = database.get_sequence_data(db_filter)
         st.session_state.data = protein_info.db_to_df(query)
     st.session_state.user_display = "The table below shows a random selection. You can retrieve new random data every minute. Use the sidebar filters for a personalized selection."  # noqa: E501
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def display_filtered_data(_db_conn, db_filter: DBFilter):
+def display_filtered_data(db_filter: DBFilter):
     with st.spinner("Loading filtered data..."):
-        query = database.get_filtered_data(_db_conn, db_filter)
+        query = database.get_sequence_data(db_filter)
         st.session_state.data = protein_info.db_to_df(query)
     st.session_state.user_display = f"The table below shows your personalized selection -  {filter_to_markdown(db_filter)}. For a random selection use the sidebar button."  # noqa: E501

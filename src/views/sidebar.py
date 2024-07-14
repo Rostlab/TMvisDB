@@ -1,9 +1,7 @@
-
 import streamlit as st
 
 from utils.database import TaxaSelectionCriterion, Domain, Topology, DBFilter
-from utils import database
-from utils import api
+from utils import lineage_definitions
 from utils.protein_visualization import ProteinStyle, ColorScheme, VizFilter, Style
 
 sb = st.sidebar
@@ -60,7 +58,7 @@ def create_filter_form():
             key="domain",
         )
 
-        kingdom_type = database.get_kingdom_for_domain(domain)
+        kingdom_type = lineage_definitions.get_kingdom_for_domain(domain)
 
         st.selectbox(
             "Select Kingdom",

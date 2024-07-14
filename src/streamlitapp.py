@@ -3,6 +3,7 @@ import os
 
 import pandas as pd
 import streamlit as st
+from peewee import OperationalError
 
 from views import (
     faq,
@@ -96,12 +97,10 @@ def initialize_database_connection():
     Initialize the Database connection.
     Returns the database connection if successful or None if unsuccessful.
     """
-
     try:
-        client = database.DATABASE.connect()
-        return client
-    except sqlipte3.OperationalError as e:
-        logging.error(f"Failed to connect to Sqlite. {str(e)}")
+        return database.initialize_database_connection()
+    except OperationalError as e:
+        logging.error(f"Failed to connect to SQLite: {str(e)}")
         st.error(
             "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: service+tmvisdb@rostlab.org",  # noqa: E501
             icon="🚨",
@@ -109,6 +108,10 @@ def initialize_database_connection():
         return None
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+        st.error(
+            "An unexpected error occurred. Please try again later.",
+            icon="🚨",
+        )
         return None
 
 
@@ -138,9 +141,9 @@ def handle_database_tab(db_conn):
     database_filter = st.session_state.database_filter
 
     if database_filter.random_selection:
-        protein_list.display_random_data(db_conn, database_filter)
+        protein_list.display_random_data(database_filter)
     else:
-        protein_list.display_filtered_data(db_conn, database_filter)
+        protein_list.display_filtered_data(database_filter)
 
     if not st.session_state.user_display == "":
         st.markdown(st.session_state.user_display)
@@ -157,18 +160,14 @@ def handle_database_tab(db_conn):
         )
 
 
-def show_3d_visualization(db_conn, visualization_filter: VizFilter):
+def show_3d_visualization(visualization_filter: VizFilter):
     """
     Display 3D visualization of the protein.
     """
-    if db_conn is None:
-        db_error()
-        return
-
     try:
         input_format = api.uniprot_get_input_type(visualization_filter.selected_id)
         protein_info = ProteinInfo.collect_for_id(
-            db_conn, visualization_filter.selected_id, input_format
+            visualization_filter.selected_id, input_format
         )
         protein_visualization.create_visualization_for_id(
             protein_info, visualization_filter.style
@@ -219,7 +218,8 @@ def _setup_logging():
 def main():
     st.set_page_config(page_title="TMvisDB", page_icon="⚛️", layout="wide")
 
-    # Debug logging for the maintenance mode environment variable
+    _setup_logging()
+
     maintenance_mode_enabled = os.getenv("MAINTENANCE_MODE", "false").lower()
     logging.debug(f"MAINTENANCE_MODE: {maintenance_mode_enabled}")
 
@@ -234,49 +234,54 @@ def main():
             maintenance_mode()
             return
 
-        db_conn = initialize_database_connection()
-        initialize_session_state()
+        try:
+            db_conn = initialize_database_connection()
+            initialize_session_state()
 
-        # Sidebar
-        sidebar.display_sidebar()
+            # Sidebar
+            sidebar.display_sidebar()
 
-        tab_overview, tab_database, tab_visualization, tab_faq, tab_about = st.tabs(
-            ["Overview", "Database", "Visualization", "FAQ", "About"]
-        )
+            tab_overview, tab_database, tab_visualization, tab_faq, tab_about = st.tabs(
+                ["Overview", "Database", "Visualization", "FAQ", "About"]
+            )
 
-        # Tabs handling
-        with tab_overview:
-            overview.intro()
+            # Tabs handling
+            with tab_overview:
+                overview.intro()
 
-        with tab_database:
-            handle_database_tab(db_conn)
+            with tab_database:
+                handle_database_tab(db_conn)
 
-            st.markdown("---")
-            if not st.session_state.data.empty:
-                local_id = st.selectbox(
-                    "Choose an ID to visualize predicted transmembrane topology below",
-                    st.session_state.data["UniProt ID"],
-                    0,
-                )
+                st.markdown("---")
+                if not st.session_state.data.empty:
+                    local_id = st.selectbox(
+                        "Choose an ID to visualize predicted transmembrane topology below",
+                        st.session_state.data["UniProt ID"],
+                        0,
+                    )
 
-                filter = VizFilter(
-                    style=ColorScheme.TMVISDB,
-                    selected_id=local_id,
-                )
+                    filter = VizFilter(
+                        style=ColorScheme.TMVISDB,
+                        selected_id=local_id,
+                    )
 
-                with st.spinner("Loading Protein Data"):
-                    show_3d_visualization(db_conn, filter)
-            st.markdown("---")
+                    with st.spinner("Loading Protein Data"):
+                        show_3d_visualization(db_conn, filter)
+                st.markdown("---")
 
-        with tab_visualization:
-            show_3d_visualization(db_conn, st.session_state.visualization_filter)
-            st.markdown("---")
+            with tab_visualization:
+                show_3d_visualization(db_conn, st.session_state.visualization_filter)
+                st.markdown("---")
 
-        with tab_faq:
-            faq.quest()
+            with tab_faq:
+                faq.quest()
 
-        with tab_about:
-            about.handle_about()
+            with tab_about:
+                about.handle_about()
+
+        finally:
+            if db_conn is not None:
+                db_conn.close()
 
 
 if __name__ == "__main__":
