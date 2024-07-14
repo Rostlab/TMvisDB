@@ -32,26 +32,24 @@ from .lineage_definitions import (
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/tmvis.db")
 
 # Database connection
-DATABASE = SqliteDatabase(
-    DATABASE_URL.split("///")[-1],
-    pragmas={"journal_mode": "off", "cache_size": -1024 * 64},
-)
+DATABASE = SqliteDatabase(DATABASE_URL.split("///")[-1])
+
+
+def set_pragma_settings(db):
+    db.execute_sql(f"PRAGMA cache_size = {-1024 * 64}")  # Set cache size to 64MB
+    db.execute_sql("PRAGMA journal_mode = off")  # Set journal mode to WAL
+    db.execute_sql("PRAGMA synchronous = NORMAL")  # Set synchronous mode to NORMAL
+    db.execute_sql("PRAGMA temp_store = MEMORY")  # Store temporary tables in memory
+    db.execute_sql(
+        "PRAGMA mmap_size = 268435456"
+    )  # Use memory-mapped I/O for performance
+    db.execute_sql("PRAGMA read_uncommitted = true")  # Allow read uncommitted
+    db.execute_sql("PRAGMA optimize")  # Run the optimize pragma
 
 
 def initialize_database_connection():
     DATABASE.connect()
-    DATABASE.execute_sql("PRAGMA cache_size = -2000")  # Set cache size to 2000KB
-    DATABASE.execute_sql("PRAGMA journal_mode = WAL")  # Set journal mode to WAL
-    DATABASE.execute_sql(
-        "PRAGMA synchronous = NORMAL"
-    )  # Set synchronous mode to NORMAL
-    DATABASE.execute_sql(
-        "PRAGMA temp_store = MEMORY"
-    )  # Store temporary tables in memory
-    DATABASE.execute_sql(
-        "PRAGMA mmap_size = 268435456"
-    )  # Use memory-mapped I/O for performance
-
+    set_pragma_settings(DATABASE)
     return DATABASE
 
 
