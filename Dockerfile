@@ -45,4 +45,4 @@ EXPOSE ${STREAMLIT_PORT}
 
 USER user
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
-CMD ["/tini", "--", "sh", "-c", "streamlit run src/streamlitapp.py --server.port=${STREAMLIT_PORT} --server.address=0.0.0.0"]
+CMD ["/tini", "--", "sh", "-c", "streamlit run src/streamlitapp.py --browser.gatherUsageStats=false --server.port=${STREAMLIT_PORT} --server.address=0.0.0.0"]
