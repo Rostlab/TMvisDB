@@ -80,7 +80,7 @@ class Sequence(BaseModel):
     uniprot_accession = CharField(index=True, unique=True)
     organism = ForeignKeyField(Organism, backref="sequences", index=True)
     sequence = TextField()
-    seq_length = IntegerField()
+    seq_length = IntegerField(index=True)
 
 
 class TMInfo(BaseModel):
