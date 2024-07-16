@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import os
 from functools import reduce
 from operator import and_
+import random
 
-import pandas as pd
 from peewee import (
     SqliteDatabase,
     Model,
@@ -171,7 +171,12 @@ class DBFilter:
         query = query.join(TMInfo).switch(Sequence).join(Organism)
 
         if self.random_selection:
-            query = query.order_by(fn.Random())
+            max_id = Sequence.select(fn.Max(Sequence.id)).scalar()
+            random_ids = random.sample(
+                range(1, max_id + 1), min(self.num_sequences * 2, max_id)
+            )
+
+            query = query.where(Sequence.id.in_(random_ids))
 
         query = query.limit(self.num_sequences)
         return query
