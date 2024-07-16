@@ -84,7 +84,7 @@ def available_annotations_human_readable(annotation: MembraneAnnotation):
 def display_membrane_annotation(protein_info: ProteinInfo):
     """Visualizes membrane annotations using the provided data."""
 
-    st.Markdown("## Membrane Annotations")
+    st.markdown("## Membrane Annotations")
     if not protein_info.annotation.has_annotations:
         st.caption("Could not find any annotations for this protein.")
         return
