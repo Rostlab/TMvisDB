@@ -141,14 +141,23 @@ class DBFilter:
     random_selection: bool = True
 
     def construct_query(self):
-        query = Sequence.select()
+        query = Sequence.select(
+            Sequence.uniprot_id,
+            Sequence.uniprot_accession,
+            Sequence.seq_length,
+            Organism.name,
+            Organism.super_kingdom,
+            Organism.clade,
+            TMInfo.tm_helix_count,
+            TMInfo.tm_strand_count,
+            TMInfo.signal_count,
+        )
 
         if not self.random_selection:
             filters = (
                 self.sequence_length_filter()
                 + self.topology_filter()
                 + self.taxonomy_filter()
-                + self.signal_peptide_filter()
             )
 
             if filters:
