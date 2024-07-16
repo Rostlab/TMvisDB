@@ -165,10 +165,7 @@ def show_3d_visualization(visualization_filter: VizFilter):
     Display 3D visualization of the protein.
     """
     try:
-        input_format = api.uniprot_get_input_type(visualization_filter.selected_id)
-        protein_info = ProteinInfo.collect_for_id(
-            visualization_filter.selected_id, input_format
-        )
+        protein_info = ProteinInfo.collect_for_id(visualization_filter.selected_id)
         protein_visualization.create_visualization_for_id(
             protein_info, visualization_filter.style
         )
@@ -261,7 +258,7 @@ def main():
                     )
 
                     filter = VizFilter(
-                        style=ColorScheme.TMVISDB,
+                        style=ColorScheme.TRANSMEMBRANE_PREDICTION,
                         selected_id=local_id,
                     )
 
