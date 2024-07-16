@@ -28,13 +28,13 @@ def display_legend(color_scheme: ColorScheme, has_no_pred):
     st.write("Color code")
     if color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE or has_no_pred:
         st.write(
-            ALPHAFOLD_LEGEND_DF.style.applymap(
+            ALPHAFOLD_LEGEND_DF.style.map(
                 protein_visualization.alphafold_legend_coloring, subset=["pLDDT score"]
             )
         )
     else:
         st.write(
-            ANNOTATION_LEGEND_DF.style.applymap(
+            ANNOTATION_LEGEND_DF.style.map(
                 protein_visualization.annotation_legend_coloring, subset=["Color"]
             )
         )
@@ -109,7 +109,7 @@ def display_other_annotations(protein_info: ProteinInfo):
     # Further sequence annotation
     st.write("Protein Annotation")
     AgGrid(
-        protein_info.info_df.drop(columns=["Sequence", "Prediction"]),
+        protein_info.info_df,
         height=100,
         fit_columns_on_grid_load=True,
     )
@@ -176,7 +176,7 @@ def create_visualization_for_id(
     # Explain colors used in the visualization
     display_legend(
         color_scheme=style.color_scheme,
-        has_no_pred=not protein_info.annotation.has_an_predicted,
+        has_no_pred=not protein_info.annotation.has_annotations,
     )
 
     st.markdown("---")
