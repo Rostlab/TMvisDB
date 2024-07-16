@@ -266,11 +266,11 @@ def main():
                     )
 
                     with st.spinner("Loading Protein Data"):
-                        show_3d_visualization(db_conn, filter)
+                        show_3d_visualization(filter)
                 st.markdown("---")
 
             with tab_visualization:
-                show_3d_visualization(db_conn, st.session_state.visualization_filter)
+                show_3d_visualization(st.session_state.visualization_filter)
                 st.markdown("---")
 
             with tab_faq:
