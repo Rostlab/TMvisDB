@@ -324,7 +324,7 @@ def main():
                 )
 
                 filter = VizFilter(
-                    style=ColorScheme.TRANSMEMBRANE_PREDICTION,
+                    style=Style(color_scheme=ColorScheme.TRANSMEMBRANE_PREDICTION),
                     selected_id=options_dict[local_id],
                 )
 
