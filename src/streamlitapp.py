@@ -188,7 +188,7 @@ def initialize_session_state():
             st.session_state[key] = value
 
 
-def handle_database_tab(db_conn):
+def handle_list_tab(db_conn):
     """
     Handle the logic for the 'Database' tab.
     """
@@ -305,19 +305,27 @@ def main():
             overview.intro()
 
         with tab_database:
-            handle_database_tab(db_conn)
+            handle_list_tab(db_conn)
 
             st.markdown("---")
             if not st.session_state.data.empty:
+                options = st.session_state.data[
+                    ["UniProt Accession", "UniProt ID"]
+                ].drop_duplicates()
+                options_dict = dict(
+                    zip(options["UniProt ID"], options["UniProt Accession"])
+                )
+
                 local_id = st.selectbox(
                     "Choose an ID to visualize predicted transmembrane topology below",
-                    st.session_state.data["UniProt ID"],
-                    0,
+                    options=options["UniProt ID"],
+                    format_func=lambda x: f"{x} ({options_dict[x]})",
+                    index=0,
                 )
 
                 filter = VizFilter(
                     style=ColorScheme.TRANSMEMBRANE_PREDICTION,
-                    selected_id=local_id,
+                    selected_id=options_dict[local_id],
                 )
 
                 with st.spinner("Loading Protein Data"):
