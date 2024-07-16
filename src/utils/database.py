@@ -137,7 +137,7 @@ class DBFilter:
     topology: Topology = Topology.ALL
     signal_peptide: bool = False
     sequence_lengths: tuple[int, int] = (16, 5500)
-    num_sequences: int = 100
+    num_sequences: int = 1000
     random_selection: bool = True
 
     def construct_query(self):

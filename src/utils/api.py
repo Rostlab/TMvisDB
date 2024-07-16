@@ -82,9 +82,8 @@ def uniprot_query_url(selected_id, input_type):
     return f"https://rest.uniprot.org/uniprotkb/search?query={query_prefix.get(input_type, selected_id)} AND active:true&fields=id,accession,length,ft_transmem&format=json&size=1"
 
 
-def uniprot_taxonomy_link(taxon_id):
-    base_url = "https://www.uniprot.org/taxonomy/"
-    return f'<a href="{base_url}{taxon_id}" target="_blank">{taxon_id}</a>'
+def uniprot_taxonomy_url(taxon_id):
+    return f"https://www.uniprot.org/taxonomy/{taxon_id}"
 
 
 def uniprot_parse_response(body):

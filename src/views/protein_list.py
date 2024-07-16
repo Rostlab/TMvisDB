@@ -1,8 +1,6 @@
-import logging
-
 import pandas as pd
 import streamlit as st
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 from utils import database, api
 from utils.database import DBFilter
@@ -13,10 +11,6 @@ from utils import protein_info
 @st.cache_data
 def convert_df(df):
     return df.to_csv().encode("utf-8")
-
-
-def left_align(s, props="text-align: left;"):
-    return props
 
 
 def filter_to_markdown(db_filter: DBFilter):
@@ -53,21 +47,40 @@ def filter_to_markdown(db_filter: DBFilter):
 
 
 def show_table(df: pd.DataFrame):
-    # TODO rename fields
-
     if "Organism ID" in df.columns:
-        df["Organism ID"] = df["Organism ID"].apply(api.uniprot_taxonomy_link)
+        df["Organism ID URL"] = df["Organism ID"].apply(api.uniprot_taxonomy_url)
 
-    builder = GridOptionsBuilder.from_dataframe(df, columnwidth=3)
+    js_code = JsCode("""
+        class UrlCellRenderer {
+          init(params) {
+            this.eGui = document.createElement('a');
+            this.eGui.innerText = params.value;
+            this.eGui.setAttribute('href', params['data']['Organism ID URL']);
+            this.eGui.setAttribute('style', "text-decoration:none");
+            this.eGui.setAttribute('target', "_blank");
+          }
+          getGui() {
+            return this.eGui;
+          }
+        }
+    """)
+
+    builder = GridOptionsBuilder.from_dataframe(df)
     builder.configure_pagination(
         enabled=True, paginationAutoPageSize=False, paginationPageSize=25
     )
     builder.configure_grid_options(enableCellTextSelection=True)
-    #    builder.configure_default_column(cellStyle: { textAlign: 'left' } )
+
+    if "Organism ID" in df.columns:
+        builder.configure_column(
+            "Organism ID",
+            cellRenderer=js_code,
+            dangerouslyAllowHTML=True,
+        )
+        builder.configure_column("Organism ID URL", hide=True)
+
     go = builder.build()
-    AgGrid(
-        df, gridOptions=go, fit_columns_on_grid_load=True
-    )  # , update_mode='manual')#theme='alpine',
+    AgGrid(df, gridOptions=go, fit_columns_on_grid_load=True, allow_unsafe_jscode=True)
 
 
 @st.cache_data(ttl=60, show_spinner=False)

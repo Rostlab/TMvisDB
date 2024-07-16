@@ -44,7 +44,10 @@ def display_links(protein_info: ProteinInfo):
     links = [
         f"- Evaluate protein-specific phenotype predictions: [LambdaPP](https://lambda.predictprotein.org/o/{protein_info.uniprot_accession})",
         "- Generate structural alignments: [Foldseek](https://search.foldseek.com/search)",
-    ] + list(protein_info.annotation.reference_urls.items)
+    ]
+
+    for source, url in protein_info.annotation.reference_urls.items():
+        links.append(f"- {DISPLAY_NAMES[source]}: [{url}]({url})")
 
     st.markdown("Resources to evaluate your selection further:")
     st.markdown("\n".join(links))
