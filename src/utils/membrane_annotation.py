@@ -81,6 +81,10 @@ class MembraneAnnotation:
     def update_reference_urls(self, new_urls: dict[AnnotationSource, str]):
         self.reference_urls.update(new_urls)
 
+    @property
+    def has_annotations(self):
+        return any(len(self.annotations[source]) > 0 for source in self.annotations)
+
 
 def construct_df_from_annotation(annotation: MembraneAnnotation, sequence: str):
     return pd.DataFrame(

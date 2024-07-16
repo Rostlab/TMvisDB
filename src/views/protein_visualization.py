@@ -16,7 +16,11 @@ from utils import protein_visualization
 from utils.protein_info import ProteinInfo
 from utils.protein_visualization import Style, ColorScheme
 from utils import membrane_annotation
-from utils.membrane_annotation import MembraneAnnotation, DISPLAY_NAMES
+from utils.membrane_annotation import (
+    MembraneAnnotation,
+    DISPLAY_NAMES,
+    AnnotationSource,
+)
 
 
 def display_legend(color_scheme: ColorScheme, has_no_pred):
@@ -120,7 +124,7 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
     # add color
     if (
         style.color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE
-        or not protein_info.annotation.has_an_predicted
+        or not protein_info.annotation.has_annotations
     ):
         view.setStyle(
             {"model": -1},
@@ -137,7 +141,7 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
         )
     else:
         tm_color = protein_visualization.map_annotation_to_color(
-            protein_info.annotation.predicted
+            protein_info.annotation.annotations[AnnotationSource.TMBED]
         )
         view.setStyle(
             {"model": -1},

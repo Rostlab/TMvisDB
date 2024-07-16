@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import pandas as pd
+from peewee import Model
 
 from utils import database, api
 from utils import membrane_annotation
@@ -26,8 +27,17 @@ FIELDS = {
 }
 
 
-def db_to_df(query_result: database.Sequence):
-    data = query_result.dicts()
+def db_to_df(query_result):
+    if isinstance(query_result, Model):
+        # Handle single result
+        data = [query_result.__data__]
+    elif hasattr(query_result, "dicts"):
+        # Handle multiple results
+        data = list(query_result.dicts())
+    else:
+        # Handle unexpected input
+        raise ValueError("Unexpected input type for db_to_df")
+
     df = pd.DataFrame(data)
     df.rename(columns=FIELDS, inplace=True)
     return df
