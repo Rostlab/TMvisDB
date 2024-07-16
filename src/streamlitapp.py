@@ -99,15 +99,15 @@ def initialize_database_connection():
     """
     try:
         return database.initialize_database_connection()
-    except OperationalError as e:
-        logging.error(f"Failed to connect to SQLite: {str(e)}")
+    except OperationalError:
+        logging.exception("Failed to connect to SQLite")
         st.error(
             "Error establishing a connection to TMvisDB! Please try again later, and/or contact us here: service+tmvisdb@rostlab.org",  # noqa: E501
             icon="🚨",
         )
         return None
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+    except Exception:
+        logging.exception("An error occurred during database initialization")
         st.error(
             "An unexpected error occurred. Please try again later.",
             icon="🚨",
@@ -169,8 +169,10 @@ def show_3d_visualization(visualization_filter: VizFilter):
         protein_visualization.create_visualization_for_id(
             protein_info, visualization_filter.style
         )
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+    except Exception:
+        logging.exception(
+            f"An error occurred while visualizing protein {visualization_filter.selected_id}:"
+        )
         st.error(
             "Sorry, we could not visualize your selected protein. Please contact us, so we can help you with your search.",  # noqa: E501
             icon="🚨",

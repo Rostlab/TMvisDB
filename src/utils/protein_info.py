@@ -35,32 +35,37 @@ def db_to_df(query_result: database.Sequence):
 
 def fetch_membrane_annotations(selected_id: str):
     annotation = MembraneAnnotation()
-
     uniprot_response = api.uniprot_fetch_annotation(selected_id)
 
     if uniprot_response is not None:
-        annotation[AnnotationSource.UNIPROT] = uniprot_response.membrane_annotations
-        annotation.reference_urls[AnnotationSource.UNIPROT] = (
-            f"https://www.uniprot.org/uniprotkb/{uniprot_accession}/entry"
+        annotation.add_annotation(
+            AnnotationSource.UNIPROT, uniprot_response.membrane_annotations
+        )
+        annotation.add_reference_url(
+            AnnotationSource.UNIPROT,
+            f"https://www.uniprot.org/uniprotkb/{uniprot_response.accession}/entry",
         )
 
     tmalphafold_annotation = api.tmalphafold_fetch_annotation(
-        uniprot_response.name if uniprot_response.name is not None else selected_id
+        uniprot_response.name
+        if uniprot_response is not None and uniprot_response.name is not None
+        else selected_id
     )
 
     if tmalphafold_annotation is not None:
-        annotation[AnnotationSource.TMALPHAFOLD] = tmalphafold_annotation
-        annotation.reference_urls[AnnotationSource.TMALPHAFOLD] = (
-            f"https://tmalphafold.ttk.hu/entry/{uniprot_response.accession if uniprot_response.accession is not None else selected_id}"
+        annotation.add_annotation(AnnotationSource.TMALPHAFOLD, tmalphafold_annotation)
+        annotation.add_reference_url(
+            AnnotationSource.TMALPHAFOLD,
+            f"https://tmalphafold.ttk.hu/entry/{uniprot_response.accession if uniprot_response is not None and uniprot_response.accession is not None else selected_id}",
         )
 
     db_annotations = database.get_membrane_annotation_for_id(selected_id)
-    parsed_db_annoations, parsed_db_refs = membrane_annotation.annotations_from_db(
+    parsed_db_annotations, parsed_db_refs = membrane_annotation.annotations_from_db(
         db_annotations
     )
 
-    annotation.annotations |= parsed_db_annoations
-    annotation.reference_urls |= parsed_db_refs
+    annotation.update_annotations(parsed_db_annotations)
+    annotation.update_reference_urls(parsed_db_refs)
 
     return annotation, uniprot_response
 

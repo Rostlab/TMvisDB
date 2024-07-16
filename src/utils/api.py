@@ -29,8 +29,8 @@ def _fetch_api_data(url):
         else:
             logging.error(f"Unsupported Content-Type: {content_type}")
             return None
-    except Exception as e:
-        logging.error(f"Error contacting {url}: \n\t{e}")
+    except Exception:
+        logging.exception(f"Error contacting {url}")
         return None
 
 
@@ -181,5 +181,7 @@ def alphafolddb_fetch_structure(selected_id):
         return seq, afdb_file
 
     except (KeyError, IndexError) as e:
-        logging.error(f"Error processing AlphaFold structure data: {e}")
+        logging.exception(
+            f"Error processing AlphaFold structure data for {selected_id}"
+        )
         return None, None

@@ -115,7 +115,7 @@ class Annotation(BaseModel):
         max_length=100,
     )
     date_added = DateField()
-    source_db = CharField(choices=["topdb", "membranome", "tmvis"])
+    source_db = CharField(choices=["topdb", "membranome", "tmbed"])
     source_db_ref = CharField(null=True)
     source_db_url = CharField(max_length=400, null=True)
 
