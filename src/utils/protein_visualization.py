@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import streamlit.components.v1 as components
 import py3Dmol
 
+from utils.membrane_annotation import ResidueAnnotation
+
 
 # Enum for Protein Styles
 class ProteinStyle(Enum):
@@ -122,6 +124,28 @@ def color_prediction(annotation_table):
     return [f"background-color: {''.join(color.split())}"] * len(annotation_table.index)
 
 
+def map_annotation_to_color(annotations: list[ResidueAnnotation]):
+    atom_color = {}
+    color_map = {
+        "S": ColorCode.SIGNAL_PEPTIDE.value,
+        "H": ColorCode.HELIX_LIGHT.value,
+        "h": ColorCode.HELIX_DARK.value,
+        "B": ColorCode.BETA_LIGHT.value,
+        "b": ColorCode.BETA_DARK.value,
+        "i": ColorCode.INSIDE.value,
+        "o": ColorCode.OUTSIDE.value,
+    }
+
+    for annotation in annotations:
+        color = "".join(
+            color_map.get(annotation.label, ColorCode.OUTSIDE.value).split()
+        )
+        for i in range(annotation.start - 1, annotation.end):
+            atom_color[i] = color
+
+    return atom_color
+
+
 def annotation_legend_coloring(value_name):
     return f"background-color: {''.join(value_name.split())}"
 
@@ -135,23 +159,6 @@ def alphafold_legend_coloring(value_name):
     }
     color = color_map.get(value_name)
     return f"background-color: {color}"
-
-
-def map_annotation_to_color(annotation: list[str]):
-    atom_color = dict()
-    color_map = {
-        "S": ColorCode.SIGNAL_PEPTIDE.value,
-        "H": ColorCode.HELIX_LIGHT.value,
-        "h": ColorCode.HELIX_DARK.value,
-        "B": ColorCode.BETA_LIGHT.value,
-        "b": ColorCode.BETA_DARK.value,
-        "i": ColorCode.INSIDE.value,
-    }
-    for nr, res_type in enumerate(annotation):
-        atom_color[nr] = "".join(
-            color_map.get(res_type, ColorCode.OUTSIDE.value).split()
-        )
-    return atom_color
 
 
 def showmol(mol_obj, height=500, width=500):

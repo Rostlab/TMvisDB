@@ -121,6 +121,7 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
     view.addModelsAsFrames(structure)
     view.setBackgroundColor("#262730")
 
+    # TODO make style selectable
     # add color
     if (
         style.color_scheme == ColorScheme.ALPHAFOLD_PLDDT_SCORE
@@ -140,9 +141,11 @@ def display_protein_structure(protein_info: ProteinInfo, style: Style):
             },
         )
     else:
-        tm_color = protein_visualization.map_annotation_to_color(
-            protein_info.annotation.annotations[AnnotationSource.TMBED]
+        tmbed_annotations = protein_info.annotation.annotations.get(
+            AnnotationSource.TMBED, []
         )
+        tm_color = protein_visualization.map_annotation_to_color(tmbed_annotations)
+
         view.setStyle(
             {"model": -1},
             {
@@ -162,7 +165,7 @@ def create_visualization_for_id(
     protein_info: ProteinInfo,
     style: Style,
 ):
-    display_protein_structure(protein_info, style)
+    display_protein_structure(protein_info, style=style)
 
     st.markdown("---")
 

@@ -3,6 +3,7 @@ import os
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from peewee import OperationalError
 
 from views import (
@@ -66,29 +67,86 @@ def collect_and_display_protein_info(db_conn, selected_id):
     return protein_info
 
 
-def acknowledge_statistics_warning():
+def display_gdpr_banner():
+    # TODO fix this
     """
-    Display a warning about usage statistics and ask for user acknowledgement.
+    Display a removable GDPR compliance banner at the bottom of the page using pure HTML, CSS, and JavaScript.
     """
-    if "user_acknowledged_stats" not in st.session_state:
-        st.session_state.user_acknowledged_stats = False
+    banner_html = """
+    <style>
+    #gdpr-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #0e1117;
+        color: #fafafa;
+        padding: 10px 20px;
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 9999;
+        transition: transform 0.3s ease-in-out;
+    }
+    #gdpr-banner.hidden {
+        transform: translateY(100%);
+    }
+    #gdpr-banner a {
+        color: #ff4b4b;
+        text-decoration: none;
+    }
+    #gdpr-banner a:hover {
+        text-decoration: underline;
+    }
+    #gdpr-close {
+        background-color: transparent;
+        border: 1px solid #fafafa;
+        color: #fafafa;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    #gdpr-close:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+    </style>
 
-    if not st.session_state.user_acknowledged_stats:
-        stats_warning_message = st.warning(
-            "Welcome to TMvisDB. The authors of TMvisDB opted out of gathering any usage summary statistics.  \n"  # noqa: E501
-            "However, this web application is implemented with Streamlit. "
-            "Please familiarize yourself with [Streamlit's privacy policy](https://streamlit.io/privacy-policy) before proceeding. "  # noqa: E501
-            "The authors of TMvisDB have no insight into or control over Streamlit's data collection process and, thus, cannot accept any liability for said process.",  # noqa: E501
-            icon="🚨",
-        )
-        continue_button_placeholder = st.empty()
-        user_clicked_continue = continue_button_placeholder.button(
-            "Click here to continue to TMvisDB."
-        )
-        if user_clicked_continue:
-            st.session_state.user_acknowledged_stats = True
-            continue_button_placeholder.empty()
-            stats_warning_message.empty()
+    <div id="gdpr-banner">
+        <div>
+            TMvisDB does not collect usage statistics. However, this site uses Streamlit, which may process some data. 
+            Please review <a href="https://streamlit.io/privacy-policy" target="_blank">Streamlit's Privacy Policy</a> for details.
+        </div>
+        <button id="gdpr-close">Close</button>
+    </div>
+
+    <script>
+    (function() {
+        var banner = document.getElementById('gdpr-banner');
+        var closeButton = document.getElementById('gdpr-close');
+
+        function closeBanner() {
+            banner.classList.add('hidden');
+            localStorage.setItem('gdpr_banner_closed', 'true');
+        }
+
+        function showBanner() {
+            banner.classList.remove('hidden');
+        }
+
+        closeButton.addEventListener('click', closeBanner);
+
+        // Check if the banner was previously closed
+        if (localStorage.getItem('gdpr_banner_closed') === 'true') {
+            closeBanner();
+        } else {
+            showBanner();
+        }
+    })();
+    </script>
+    """
+
+    components.html(banner_html, height=0)
 
 
 @st.cache_resource
@@ -222,65 +280,63 @@ def main():
     maintenance_mode_enabled = os.getenv("MAINTENANCE_MODE", "false").lower()
     logging.debug(f"MAINTENANCE_MODE: {maintenance_mode_enabled}")
 
-    acknowledge_statistics_warning()
+    # Header
+    header.title()
+    display_gdpr_banner()
 
-    if st.session_state.user_acknowledged_stats:
-        # Header
-        header.title()
+    if maintenance_mode_enabled == "true":
+        logging.debug("Entering maintenance mode")
+        maintenance_mode()
+        return
 
-        if maintenance_mode_enabled == "true":
-            logging.debug("Entering maintenance mode")
-            maintenance_mode()
-            return
+    try:
+        db_conn = initialize_database_connection()
+        initialize_session_state()
 
-        try:
-            db_conn = initialize_database_connection()
-            initialize_session_state()
+        # Sidebar
+        sidebar.display_sidebar()
 
-            # Sidebar
-            sidebar.display_sidebar()
+        tab_overview, tab_database, tab_visualization, tab_faq, tab_about = st.tabs(
+            ["Overview", "Database", "Visualization", "FAQ", "About"]
+        )
 
-            tab_overview, tab_database, tab_visualization, tab_faq, tab_about = st.tabs(
-                ["Overview", "Database", "Visualization", "FAQ", "About"]
-            )
+        # Tabs handling
+        with tab_overview:
+            overview.intro()
 
-            # Tabs handling
-            with tab_overview:
-                overview.intro()
+        with tab_database:
+            handle_database_tab(db_conn)
 
-            with tab_database:
-                handle_database_tab(db_conn)
+            st.markdown("---")
+            if not st.session_state.data.empty:
+                local_id = st.selectbox(
+                    "Choose an ID to visualize predicted transmembrane topology below",
+                    st.session_state.data["UniProt ID"],
+                    0,
+                )
 
-                st.markdown("---")
-                if not st.session_state.data.empty:
-                    local_id = st.selectbox(
-                        "Choose an ID to visualize predicted transmembrane topology below",
-                        st.session_state.data["UniProt ID"],
-                        0,
-                    )
+                filter = VizFilter(
+                    style=ColorScheme.TRANSMEMBRANE_PREDICTION,
+                    selected_id=local_id,
+                )
 
-                    filter = VizFilter(
-                        style=ColorScheme.TRANSMEMBRANE_PREDICTION,
-                        selected_id=local_id,
-                    )
+                with st.spinner("Loading Protein Data"):
+                    show_3d_visualization(filter)
+            st.markdown("---")
 
-                    with st.spinner("Loading Protein Data"):
-                        show_3d_visualization(filter)
-                st.markdown("---")
+        with tab_visualization:
+            show_3d_visualization(st.session_state.visualization_filter)
+            st.markdown("---")
 
-            with tab_visualization:
-                show_3d_visualization(st.session_state.visualization_filter)
-                st.markdown("---")
+        with tab_faq:
+            faq.quest()
 
-            with tab_faq:
-                faq.quest()
+        with tab_about:
+            about.handle_about()
 
-            with tab_about:
-                about.handle_about()
-
-        finally:
-            if db_conn is not None and not db_conn.is_closed():
-                db_conn.close()
+    finally:
+        if db_conn is not None and not db_conn.is_closed():
+            db_conn.close()
 
 
 if __name__ == "__main__":
