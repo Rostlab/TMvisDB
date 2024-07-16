@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder
 
-from utils import database
+from utils import database, api
 from utils.database import DBFilter
 from utils.lineage_definitions import Topology
 from utils import protein_info
@@ -54,6 +54,9 @@ def filter_to_markdown(db_filter: DBFilter):
 
 def show_table(df: pd.DataFrame):
     # TODO rename fields
+
+    if "Organism ID" in df.columns:
+        df["Organism ID"] = df["Organism ID"].apply(api.uniprot_taxonomy_link)
 
     builder = GridOptionsBuilder.from_dataframe(df, columnwidth=3)
     builder.configure_pagination(
