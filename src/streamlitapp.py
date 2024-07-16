@@ -9,8 +9,8 @@ from peewee import OperationalError
 from views import (
     faq,
     overview,
+    protein_detail,
     protein_list,
-    protein_visualization,
     about,
     sidebar,
     header,
@@ -224,7 +224,7 @@ def show_3d_visualization(visualization_filter: VizFilter):
     """
     try:
         protein_info = ProteinInfo.collect_for_id(visualization_filter.selected_id)
-        protein_visualization.create_visualization_for_id(
+        protein_detail.create_visualization_for_id(
             protein_info, visualization_filter.style
         )
     except Exception:
@@ -333,6 +333,7 @@ def main():
             st.markdown("---")
 
         with tab_visualization:
+            # TODO Move Sidebar filter here
             show_3d_visualization(st.session_state.visualization_filter)
             st.markdown("---")
 

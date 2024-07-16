@@ -5,6 +5,7 @@ import streamlit as st
 from st_aggrid import AgGrid
 
 from utils.protein_visualization import showmol
+from views import protein_list
 
 
 from utils.protein_visualization import (
@@ -171,7 +172,9 @@ def create_visualization_for_id(
 
     display_membrane_annotation(protein_info)
 
-    display_other_annotations(protein_info)
+    protein_list.show_table(
+        protein_info.info_df, paginate=False
+    )  # FIXME: This should have a better structure
 
     # Explain colors used in the visualization
     display_legend(

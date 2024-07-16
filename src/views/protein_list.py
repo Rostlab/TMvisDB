@@ -46,7 +46,7 @@ def filter_to_markdown(db_filter: DBFilter):
     return ", ".join(parts)
 
 
-def show_table(df: pd.DataFrame):
+def show_table(df: pd.DataFrame, paginate=True):
     if "Organism ID" in df.columns:
         df["Organism ID URL"] = df["Organism ID"].apply(api.uniprot_taxonomy_url)
 
@@ -66,9 +66,10 @@ def show_table(df: pd.DataFrame):
     """)
 
     builder = GridOptionsBuilder.from_dataframe(df)
-    builder.configure_pagination(
-        enabled=True, paginationAutoPageSize=False, paginationPageSize=25
-    )
+    if paginate:
+        builder.configure_pagination(
+            enabled=True, paginationAutoPageSize=False, paginationPageSize=25
+        )
     builder.configure_grid_options(enableCellTextSelection=True)
 
     if "Organism ID" in df.columns:

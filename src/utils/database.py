@@ -128,6 +128,23 @@ class Annotation(BaseModel):
         )
 
 
+SEQUENCE_INFO = [
+    Sequence.uniprot_id,
+    Sequence.uniprot_accession,
+    Sequence.seq_length,
+    Organism.name,
+    Organism.taxon_id,
+    Organism.super_kingdom,
+    Organism.clade,
+    TMInfo.has_alpha_helix,
+    TMInfo.has_beta_strand,
+    TMInfo.has_signal,
+    TMInfo.tm_helix_count,
+    TMInfo.tm_strand_count,
+    TMInfo.signal_count,
+]
+
+
 @dataclass
 class DBFilter:
     taxonomy_selection: TaxaSelectionCriterion = TaxaSelectionCriterion.ORGANISM
@@ -141,21 +158,7 @@ class DBFilter:
     random_selection: bool = True
 
     def construct_query(self):
-        query = Sequence.select(
-            Sequence.uniprot_id,
-            Sequence.uniprot_accession,
-            Sequence.seq_length,
-            Organism.name,
-            Organism.taxon_id,
-            Organism.super_kingdom,
-            Organism.clade,
-            TMInfo.tm_helix_count,
-            TMInfo.tm_strand_count,
-            TMInfo.signal_count,
-            TMInfo.has_alpha_helix,
-            TMInfo.has_beta_strand,
-            TMInfo.has_signal,
-        )
+        query = Sequence.select(*SEQUENCE_INFO)
 
         if not self.random_selection:
             filters = (
@@ -228,7 +231,31 @@ def get_sequence_data(db_filter: DBFilter):
 
 
 def get_sequence_data_for_id(selected_id: str):
-    return Sequence.get_or_none(Sequence.uniprot_accession == selected_id)
+    return (
+        Sequence.select(*SEQUENCE_INFO)
+        .join(TMInfo)
+        .switch(Sequence)
+        .join(Organism)
+        .where(Sequence.uniprot_accession == selected_id)
+        .first()
+    )
+
+
+def model_to_dict(model_instance, include_relations=True):
+    data = {}
+    for field in model_instance._meta.fields.values():
+        data[field.name] = getattr(model_instance, field.name)
+
+    if include_relations:
+        for relation_name, relation in model_instance._meta.backrefs.items():
+            related_obj = getattr(model_instance, relation_name)
+            if related_obj:
+                related_data = model_to_dict(related_obj, include_relations=False)
+                data.update(
+                    {f"{relation_name}_{k}": v for k, v in related_data.items()}
+                )
+
+    return data
 
 
 def get_membrane_annotation_for_id(selected_id: str):

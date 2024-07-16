@@ -1,6 +1,7 @@
 # Copyright 2023 RostLab.
 # SPDX-License-Identifier: 	AGPL-3.0-or-later
 from dataclasses import dataclass
+import logging
 
 import pandas as pd
 from peewee import Model
@@ -28,16 +29,22 @@ FIELDS = {
 
 
 def db_to_df(query_result):
+    conversion_type = None
     if isinstance(query_result, Model):
         # Handle single result
-        data = [query_result.__data__]
+        conversion_type = "Model"
+        data = [database.model_to_dict(query_result)]
     elif hasattr(query_result, "dicts"):
         # Handle multiple results
+        conversion_type = "QueryResult"
         data = list(query_result.dicts())
     else:
         # Handle unexpected input
         raise ValueError("Unexpected input type for db_to_df")
 
+    logging.debug(
+        f"Query Data for DataFrame usiong {conversion_type} conversion:\n {data}"
+    )
     df = pd.DataFrame(data)
     df.rename(columns=FIELDS, inplace=True)
     return df
