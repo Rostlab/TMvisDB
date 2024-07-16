@@ -146,11 +146,15 @@ class DBFilter:
             Sequence.uniprot_accession,
             Sequence.seq_length,
             Organism.name,
+            Organism.taxon_id,
             Organism.super_kingdom,
             Organism.clade,
             TMInfo.tm_helix_count,
             TMInfo.tm_strand_count,
             TMInfo.signal_count,
+            TMInfo.has_alpha_helix,
+            TMInfo.has_beta_strand,
+            TMInfo.has_signal,
         )
 
         if not self.random_selection:

@@ -9,10 +9,27 @@ from utils import membrane_annotation
 from utils.membrane_annotation import MembraneAnnotation, AnnotationSource
 
 
+FIELDS = {
+    "uniprot_accession": "UniProt Accession",
+    "uniprot_id": "UniProt ID",
+    "seq_length": "Sequence length",
+    "name": "Organism name",
+    "taxon_id": "Organism ID",
+    "super_kingdom": "Domain",
+    "clade": "Kingdom",
+    "tm_has_alpha_helix": "Has alpha helix",
+    "tm_has_beta_strand": "Has beta strand",
+    "tm_has_signal": "Has signal peptide",
+    "tm_helix_count": "Transmembrane helix residues",
+    "tm_strand_count": "Transmembrane strand residues",
+    "signal_count": "Signal peptide residues",
+}
+
+
 def db_to_df(query_result: database.Sequence):
     data = query_result.dicts()
     df = pd.DataFrame(data)
-
+    df.rename(columns=FIELDS, inplace=True)
     return df
 
 
