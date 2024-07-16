@@ -237,25 +237,9 @@ def get_sequence_data_for_id(selected_id: str):
         .switch(Sequence)
         .join(Organism)
         .where(Sequence.uniprot_accession == selected_id)
+        .dicts()
         .first()
     )
-
-
-def model_to_dict(model_instance, include_relations=True):
-    data = {}
-    for field in model_instance._meta.fields.values():
-        data[field.name] = getattr(model_instance, field.name)
-
-    if include_relations:
-        for relation_name, relation in model_instance._meta.backrefs.items():
-            related_obj = getattr(model_instance, relation_name)
-            if related_obj:
-                related_data = model_to_dict(related_obj, include_relations=False)
-                data.update(
-                    {f"{relation_name}_{k}": v for k, v in related_data.items()}
-                )
-
-    return data
 
 
 def get_membrane_annotation_for_id(selected_id: str):

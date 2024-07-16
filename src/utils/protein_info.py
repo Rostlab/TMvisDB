@@ -30,10 +30,10 @@ FIELDS = {
 
 def db_to_df(query_result):
     conversion_type = None
-    if isinstance(query_result, Model):
+    if isinstance(query_result, dict):
         # Handle single result
         conversion_type = "Model"
-        data = [database.model_to_dict(query_result)]
+        data = [query_result]
     elif hasattr(query_result, "dicts"):
         # Handle multiple results
         conversion_type = "QueryResult"
