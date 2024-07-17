@@ -43,7 +43,7 @@ def db_to_df(query_result):
         raise ValueError("Unexpected input type for db_to_df")
 
     logging.debug(
-        f"Query Data for DataFrame usiong {conversion_type} conversion:\n {data}"
+        f"Query Data for DataFrame using {conversion_type} conversion:\n {data}"
     )
     df = pd.DataFrame(data)
     df.rename(columns=FIELDS, inplace=True)
