@@ -63,10 +63,6 @@ def show_table(df: pd.DataFrame, paginate=True):
     """)
 
     builder = GridOptionsBuilder.from_dataframe(df)
-    if paginate:
-        builder.configure_pagination(
-            enabled=True, paginationAutoPageSize=False, paginationPageSize=25
-        )
 
     builder.configure_grid_options(enableCellTextSelection=True)
 
@@ -86,8 +82,16 @@ def show_table(df: pd.DataFrame, paginate=True):
             dangerouslyAllowHTML=True,
         )
 
-    builder.configure_auto_height(autoHeight=True)
-    builder.configure_grid_options(domLayout="autoHeight")
+    if paginate:
+        builder.configure_pagination(
+            enabled=True, paginationAutoPageSize=False, paginationPageSize=25
+        )
+        # When paginating, set a fixed height
+        builder.configure_grid_options(domLayout="normal", height=500)
+    else:
+        # When not paginating, use auto-height
+        builder.configure_auto_height(autoHeight=True)
+        builder.configure_grid_options(domLayout="autoHeight")
 
     go = builder.build()
     AgGrid(df, gridOptions=go, fit_columns_on_grid_load=True, allow_unsafe_jscode=True)
