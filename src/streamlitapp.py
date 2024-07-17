@@ -208,7 +208,7 @@ def handle_list_tab(db_conn):
         st.markdown("---")
 
     if not st.session_state.data.empty:
-        protein_list.show_table(st.session_state.data)
+        protein_list.show_table(st.session_state.data, paginate=True)
         st.download_button(
             "Download selection",
             protein_list.convert_df(st.session_state.data),

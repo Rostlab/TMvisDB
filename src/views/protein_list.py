@@ -67,6 +67,7 @@ def show_table(df: pd.DataFrame, paginate=True):
         builder.configure_pagination(
             enabled=True, paginationAutoPageSize=False, paginationPageSize=25
         )
+
     builder.configure_grid_options(enableCellTextSelection=True)
 
     if "Organism ID" in df.columns:

@@ -121,7 +121,7 @@ class ProteinInfo:
 
         sequence, structure = api.alphafolddb_fetch_structure(
             uniprot_info.accession
-            if uniprot_info.accession is not None
+            if uniprot_info is not None and uniprot_info.accession is not None
             else selected_id
         )
 
