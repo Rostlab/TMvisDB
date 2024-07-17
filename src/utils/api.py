@@ -82,6 +82,10 @@ def uniprot_query_url(selected_id, input_type):
     return f"https://rest.uniprot.org/uniprotkb/search?query={query_prefix.get(input_type, selected_id)} AND active:true&fields=id,accession,length,ft_transmem&format=json&size=1"
 
 
+def uniprot_entry_url(selected_id):
+    return f"https://www.uniprot.org/uniprotkb/{selected_id}/entry"
+
+
 def uniprot_taxonomy_url(taxon_id):
     return f"https://www.uniprot.org/taxonomy/{taxon_id}"
 
@@ -130,6 +134,10 @@ def tmalphafold_query_url(up_name):
     Constructs the URL for querying the TmAlphaFold database.
     """
     return f"https://tmalphafold.ttk.hu/api/tmdet/{up_name}.json"
+
+
+def tmalphafold_entry_url(up_name):
+    return f"https://tmalphafold.ttk.hu/entry/{up_name}"
 
 
 def tmalphafold_parse_response(body):

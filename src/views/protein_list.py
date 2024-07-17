@@ -47,15 +47,12 @@ def filter_to_markdown(db_filter: DBFilter):
 
 
 def show_table(df: pd.DataFrame, paginate=True):
-    if "Organism ID" in df.columns:
-        df["Organism ID URL"] = df["Organism ID"].apply(api.uniprot_taxonomy_url)
-
     js_code = JsCode("""
         class UrlCellRenderer {
           init(params) {
             this.eGui = document.createElement('a');
             this.eGui.innerText = params.value;
-            this.eGui.setAttribute('href', params['data']['Organism ID URL']);
+            this.eGui.setAttribute('href', params.url.replace('${value}', params.value));
             this.eGui.setAttribute('style', "text-decoration:none");
             this.eGui.setAttribute('target', "_blank");
           }
@@ -76,9 +73,20 @@ def show_table(df: pd.DataFrame, paginate=True):
         builder.configure_column(
             "Organism ID",
             cellRenderer=js_code,
+            cellRendererParams={"url": api.uniprot_taxonomy_url("${value}")},
             dangerouslyAllowHTML=True,
         )
-        builder.configure_column("Organism ID URL", hide=True)
+
+    if "UniProt Accession" in df.columns:
+        builder.configure_column(
+            "UniProt Accession",
+            cellRenderer=js_code,
+            cellRendererParams={"url": api.uniprot_entry_url("${value}")},
+            dangerouslyAllowHTML=True,
+        )
+
+    builder.configure_auto_height(autoHeight=True)
+    builder.configure_grid_options(domLayout="autoHeight")
 
     go = builder.build()
     AgGrid(df, gridOptions=go, fit_columns_on_grid_load=True, allow_unsafe_jscode=True)

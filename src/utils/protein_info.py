@@ -60,7 +60,7 @@ def fetch_membrane_annotations(selected_id: str):
         )
         annotation.add_reference_url(
             AnnotationSource.UNIPROT,
-            f"https://www.uniprot.org/uniprotkb/{uniprot_response.accession}/entry",
+            api.uniprot_entry_url(uniprot_response.accession),
         )
 
     tmalphafold_annotation = api.tmalphafold_fetch_annotation(
@@ -73,7 +73,12 @@ def fetch_membrane_annotations(selected_id: str):
         annotation.add_annotation(AnnotationSource.TMALPHAFOLD, tmalphafold_annotation)
         annotation.add_reference_url(
             AnnotationSource.TMALPHAFOLD,
-            f"https://tmalphafold.ttk.hu/entry/{uniprot_response.accession if uniprot_response is not None and uniprot_response.accession is not None else selected_id}",
+            api.tmalphafold_entry_url(
+                uniprot_response.accession
+                if uniprot_response is not None
+                and uniprot_response.accession is not None
+                else selected_id
+            ),
         )
 
     db_annotations = database.get_membrane_annotation_for_id(selected_id)
