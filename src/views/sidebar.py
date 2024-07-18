@@ -1,13 +1,7 @@
-from dataclasses import dataclass
-from enum import Enum
-import re
-import logging
-
 import streamlit as st
 
-from utils.db import TaxaSelectionCriterion, Domain, Topology, DBFilter
-from utils import db
-from utils import api
+from utils.database import TaxaSelectionCriterion, Domain, Topology, DBFilter
+from utils import lineage_definitions
 from utils.protein_visualization import ProteinStyle, ColorScheme, VizFilter, Style
 
 sb = st.sidebar
@@ -32,6 +26,7 @@ def create_random_form():
 
 
 def create_filter_form():
+    # FIXME this should only re-render on submit
     with sb.expander("Click here to access filters for TMvisDB."):
         taxonomy_selection = st.radio(
             "Select Taxonomy via",
@@ -64,7 +59,7 @@ def create_filter_form():
             key="domain",
         )
 
-        kingdom_type = db.get_kingdom_for_domain(domain)
+        kingdom_type = lineage_definitions.get_kingdom_for_domain(domain)
 
         st.selectbox(
             "Select Kingdom",
@@ -102,7 +97,7 @@ def create_filter_form():
         st.number_input(
             "Select limit of shown sequences",
             1,
-            10000,
+            1000,
             value=100,
             help="As TMvisDB is a large database, you may want to set a limit for your table.",
             key="num_sequences",

@@ -21,15 +21,14 @@ def software():
         "##### Software   \n"
         "- Website: [Streamlit](https://streamlit.io), [pandas](https://pandas.pydata.org)   \n"
         "- Database: [MongoDB](https://www.mongodb.com), [pymongo](https://github.com/mongodb/mongo-python-driver)  \n"
-        "- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu), [stmol](https://github.com/napoles-uach/stmol)"
+        "- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu)  \n"
     )
 
 
 def author():
     st.markdown(
         "##### Development & Maintenance   \n"
-        "- Corresponding Author: [Céline Marquet](https://github.com/C-Marquet)  \n"
-        "- Code Source: [Github](https://github.com/marquetce/TMvisDB)  \n"
+        "- Code Source: [Github](https://github.com/rostlab/TMvisDB)  \n"
         "- License: [License](https://opensource.org/licenses/AFL-3.0)  \n"
         "- Resources & Maintenance: [Rostlab](https://rostlab.org)"
     )

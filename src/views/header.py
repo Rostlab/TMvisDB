@@ -1,6 +1,7 @@
 import streamlit as st
 import py3Dmol
-from stmol import showmol
+
+from utils.protein_visualization import showmol
 
 ##############
 # Header vis #
