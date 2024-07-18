@@ -26,6 +26,7 @@ def create_random_form():
 
 
 def create_filter_form():
+    # FIXME this should only re-render on submit
     with sb.expander("Click here to access filters for TMvisDB."):
         taxonomy_selection = st.radio(
             "Select Taxonomy via",

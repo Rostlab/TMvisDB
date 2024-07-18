@@ -3,7 +3,6 @@ import os
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 from peewee import OperationalError
 
 from views import (
@@ -69,91 +68,28 @@ def collect_and_display_protein_info(db_conn, selected_id):
 
 def display_gdpr_banner():
     """
-    Display a removable GDPR compliance banner at the bottom of the page using pure HTML, CSS, and JavaScript.
-    Uses Streamlit's light theme background color variable.
+    Display a removable GDPR compliance banner using Streamlit components.
     """
-    banner_html = """
-    <style>
-    #gdpr-banner {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background-color: var(--st-color-background-light, #ffffff);
-        color: var(--st-color-text-light, #262730);
-        padding: 10px 20px;
-        font-size: 14px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        z-index: 9999;
-        transition: transform 0.3s ease-in-out;
-        border-top: 1px solid var(--st-color-border-light, #e0e0e0);
-    }
-    #gdpr-banner.hidden {
-        transform: translateY(100%);
-    }
-    #gdpr-banner a {
-        color: var(--st-color-primary, #ff4b4b);
-        text-decoration: none;
-    }
-    #gdpr-banner a:hover {
-        text-decoration: underline;
-    }
-    #gdpr-close {
-        background-color: transparent;
-        border: 1px solid var(--st-color-border-light, #e0e0e0);
-        color: var(--st-color-text-light, #262730);
-        padding: 5px 10px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-    }
-    #gdpr-close:hover {
-        background-color: var(--st-color-background-hover, #f0f2f6);
-    }
-    </style>
-    <div id="gdpr-banner">
-        <div>
-            TMvisDB does not collect usage statistics. However, this site uses Streamlit, which may process some data. 
-            Please review <a href="https://streamlit.io/privacy-policy" target="_blank">Streamlit's Privacy Policy</a> for details.
-        </div>
-        <button id="gdpr-close">Close</button>
-    </div>
-    <script>
-    function setupGDPRBanner() {
-        var banner = document.getElementById('gdpr-banner');
-        var closeButton = document.getElementById('gdpr-close');
-        
-        function closeBanner() {
-            banner.classList.add('hidden');
-            localStorage.setItem('gdpr_banner_closed', 'true');
-        }
-        
-        function showBanner() {
-            banner.classList.remove('hidden');
-        }
-        
-        if (closeButton) {
-            closeButton.addEventListener('click', closeBanner);
-        }
-        
-        if (localStorage.getItem('gdpr_banner_closed') === 'true') {
-            closeBanner();
-        } else {
-            showBanner();
-        }
-    }
+    # Initialize session state for banner visibility
+    if "show_banner" not in st.session_state:
+        st.session_state.show_banner = True
 
-    // Run the setup function when the DOM is fully loaded
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupGDPRBanner);
-    } else {
-        setupGDPRBanner();
-    }
-    </script>
-    """
+    # Display the banner if it hasn't been dismissed
+    if st.session_state.show_banner:
+        with st.container():
+            cols = st.columns([8, 2])
+            with cols[0]:
+                st.warning(
+                    "TMvisDB does not collect usage statistics. However, this site uses Streamlit, which may process some data. "
+                    "Please review [Streamlit's Privacy Policy](https://streamlit.io/privacy-policy) for details."
+                )
+            with cols[1]:
+                if st.button("Dismiss"):
+                    st.session_state.show_banner = False
+                    st.rerun()
 
-    components.html(banner_html, height=1)
+    # Add some vertical space after the banner
+    st.markdown("<br>", unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -288,8 +224,8 @@ def main():
     logging.debug(f"MAINTENANCE_MODE: {maintenance_mode_enabled}")
 
     # Header
-    header.title()
     display_gdpr_banner()
+    header.title()
 
     if maintenance_mode_enabled == "true":
         logging.debug("Entering maintenance mode")

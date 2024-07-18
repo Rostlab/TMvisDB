@@ -22,14 +22,13 @@ ARG TINI_VERSION="v0.19.0"
 ARG STREAMLIT_PORT=8501
 ARG GIT_HASH
 
-COPY --from=builder /project/.venv/ /project/.venv
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 
 RUN set -eux; \
-	apt-get update; \
-	apt-get install -y gosu; \
-	rm -rf /var/lib/apt/lists/*; \
-    chmod +x /tini;
+apt-get update; \
+apt-get install -y --no-install-recommends gosu; \
+rm -rf /var/lib/apt/lists/*; \
+chmod +x /tini;
 
 ENV PATH="/project/.venv/bin:$PATH"
 ENV GIT_HASH=${GIT_HASH:-dev}
@@ -41,6 +40,7 @@ ENV LOG_LEVEL="ERROR"
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+COPY --from=builder /project/.venv/ /project/.venv
 COPY src /project/src
 COPY assets /project/assets
 WORKDIR /project
