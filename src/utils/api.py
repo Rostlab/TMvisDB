@@ -29,8 +29,13 @@ def _fetch_api_data(url):
         else:
             logging.error(f"Unsupported Content-Type: {content_type}")
             return None
+    except httpx.HTTPStatusError as e:
+        logging.error(f"HTTP error occurred while fetching data from {url}: {e}")
+        return None
     except Exception:
-        logging.exception(f"Error contacting {url}")
+        logging.exception(
+            f"An unexpected error occurred while fetching data from {url}"
+        )
         return None
 
 
@@ -126,7 +131,10 @@ def uniprot_fetch_annotation(selected_id):
     input_type = uniprot_get_input_type(selected_id)
     url = uniprot_query_url(selected_id, input_type)
     body = _fetch_api_data(url)
-    return uniprot_parse_response(body)
+    uniprot_info = uniprot_parse_response(body)
+    if not uniprot_info:
+        logging.info(f"No UniProt annotations found for {selected_id}")
+    return uniprot_info
 
 
 def tmalphafold_query_url(up_name):
@@ -167,7 +175,13 @@ def tmalphafold_fetch_annotation(up_name):
     """
     url = tmalphafold_query_url(up_name)
     body = _fetch_api_data(url)
+    if not body:
+        logging.info(f"No TmAlphaFold annotations found for {up_name}")
+        return None
+
     tmaf_annotations = tmalphafold_parse_response(body)
+    if not tmaf_annotations:
+        logging.info(f"No TmAlphaFold annotations found for {up_name}")
     return tmaf_annotations
 
 

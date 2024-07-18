@@ -127,8 +127,10 @@ class ProteinInfo:
 
         return ProteinInfo(
             supplied_accession=selected_id,
-            uniprot_accession=uniprot_info.accession,
-            uniprot_name=uniprot_info.name,
+            uniprot_accession=uniprot_info.accession
+            if uniprot_info is not None
+            else selected_id,
+            uniprot_name=uniprot_info.name if uniprot_info is not None else None,
             sequence=sequence,
             structure=structure,
             annotation=annotation,
