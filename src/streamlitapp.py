@@ -68,9 +68,9 @@ def collect_and_display_protein_info(db_conn, selected_id):
 
 
 def display_gdpr_banner():
-    # TODO fix this
     """
     Display a removable GDPR compliance banner at the bottom of the page using pure HTML, CSS, and JavaScript.
+    Uses Streamlit's light theme background color variable.
     """
     banner_html = """
     <style>
@@ -79,8 +79,8 @@ def display_gdpr_banner():
         bottom: 0;
         left: 0;
         right: 0;
-        background-color: #0e1117;
-        color: #fafafa;
+        background-color: var(--st-color-background-light, #ffffff);
+        color: var(--st-color-text-light, #262730);
         padding: 10px 20px;
         font-size: 14px;
         display: flex;
@@ -88,12 +88,13 @@ def display_gdpr_banner():
         align-items: center;
         z-index: 9999;
         transition: transform 0.3s ease-in-out;
+        border-top: 1px solid var(--st-color-border-light, #e0e0e0);
     }
     #gdpr-banner.hidden {
         transform: translateY(100%);
     }
     #gdpr-banner a {
-        color: #ff4b4b;
+        color: var(--st-color-primary, #ff4b4b);
         text-decoration: none;
     }
     #gdpr-banner a:hover {
@@ -101,17 +102,16 @@ def display_gdpr_banner():
     }
     #gdpr-close {
         background-color: transparent;
-        border: 1px solid #fafafa;
-        color: #fafafa;
+        border: 1px solid var(--st-color-border-light, #e0e0e0);
+        color: var(--st-color-text-light, #262730);
         padding: 5px 10px;
         cursor: pointer;
         transition: background-color 0.3s ease;
     }
     #gdpr-close:hover {
-        background-color: rgba(255,255,255,0.1);
+        background-color: var(--st-color-background-hover, #f0f2f6);
     }
     </style>
-
     <div id="gdpr-banner">
         <div>
             TMvisDB does not collect usage statistics. However, this site uses Streamlit, which may process some data. 
@@ -119,34 +119,41 @@ def display_gdpr_banner():
         </div>
         <button id="gdpr-close">Close</button>
     </div>
-
     <script>
-    (function() {
+    function setupGDPRBanner() {
         var banner = document.getElementById('gdpr-banner');
         var closeButton = document.getElementById('gdpr-close');
-
+        
         function closeBanner() {
             banner.classList.add('hidden');
             localStorage.setItem('gdpr_banner_closed', 'true');
         }
-
+        
         function showBanner() {
             banner.classList.remove('hidden');
         }
-
-        closeButton.addEventListener('click', closeBanner);
-
-        // Check if the banner was previously closed
+        
+        if (closeButton) {
+            closeButton.addEventListener('click', closeBanner);
+        }
+        
         if (localStorage.getItem('gdpr_banner_closed') === 'true') {
             closeBanner();
         } else {
             showBanner();
         }
-    })();
+    }
+
+    // Run the setup function when the DOM is fully loaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupGDPRBanner);
+    } else {
+        setupGDPRBanner();
+    }
     </script>
     """
 
-    components.html(banner_html, height=0)
+    components.html(banner_html, height=1)
 
 
 @st.cache_resource
