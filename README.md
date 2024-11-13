@@ -1,6 +1,7 @@
 # TMvisDB
 
-> **Note**: Development has moved to [t03i/TMVisDB](https://github.com/t03i/TMVisDB).
+> [!WARNING]  
+> Development has moved to [t03i/TMVisDB](https://github.com/t03i/TMVisDB).
 > This repository is no longer maintained. To reflect this, the repository is archived.
 
 Welcome to **TMvisDB**: A database to search and visualize predicted transmembrane proteins. :seal:
