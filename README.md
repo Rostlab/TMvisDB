@@ -1,12 +1,16 @@
 # TMvisDB
 
+> **Note**: Development has moved to [t03i/TMVisDB](https://github.com/t03i/TMVisDB).
+> This repository is no longer maintained. To reflect this, the repository is archived.
+
 Welcome to **TMvisDB**: A database to search and visualize predicted transmembrane proteins. :seal:
 
 **TMvisDB** provides per-residue transmembrane topology annotations for all proteins in [AlphaFold DB](https://alphafold.com/) (~ 200 million proteins, September '22) predicted as transmembrane proteins (~ 46 million). The annotations are predicted with [TMbed](http://example.com), and are visualized by overlaying them with [AlphaFold 2](https://www.nature.com/articles/s41586-021-03819-2) structures.
 
 The web interface of **TMvisDB** is implemented with [Streamlit](https://streamlit.io), and accessible here: https://tmvisdb.predictprotein.org.
 
-----
+---
+
 #### Preview of TMvisDB visualizations
 
 <img width="1200" alt="image" src="https://user-images.githubusercontent.com/73125710/202669572-5dffebee-73bd-4839-92b5-e3d2acdc20c1.png">
@@ -17,40 +21,40 @@ The web interface of **TMvisDB** is implemented with [Streamlit](https://streaml
 
 </details>
 
-----
+---
 
 #### :bulb: How to browse TMvisDB
 
 To browse the 46 million predicted transmembrane proteins in TMvisDB via a table, you can show a random selection or use the following filters:
 
-- Transmembrane topology (alpha-helix, beta-strand)
-- Include/Exclude sequences with predicted signal peptides
-- Taxonomy (UniProt Organism Identifier, Domain, Kingdom)
-- Protein length
+-   Transmembrane topology (alpha-helix, beta-strand)
+-   Include/Exclude sequences with predicted signal peptides
+-   Taxonomy (UniProt Organism Identifier, Domain, Kingdom)
+-   Protein length
 
 #### :bulb: How to visualize predicted transmembrane proteins
 
 Single proteins of TMvisDB can be selected for 3D-visualization of per-residue transmembrane topology annotation. You can either select a protein from the table you generated while browsing TMvisDB, or you can directly enter a UniProt Identifier. The AlphaFold 2 structures of a protein is then shown with the corresponding color code of the predicted topology. You may also select the pLDDT score of AlphaFold 2 as a color code.
 
-----
+---
 
 #### References
 
-- Preprint for TMvisDB: [TMvisDB](https://biorxiv.org/cgi/content/short/2022.11.30.518551)
-- Structure predictions: [Alphafold DB](https://alphafold.ebi.ac.uk)
-- Transmembrane topology predictions: [TMbed](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-022-04873-x)
-- Visualization: [TMvis](https://github.com/Rostlab/TMvis)
-- Protein-specific phenotype predictions: [LambdaPP](https://embed.predictprotein.org)
-- Structural aligments: [Foldseek](https://search.foldseek.com/search)
+-   Preprint for TMvisDB: [TMvisDB](https://biorxiv.org/cgi/content/short/2022.11.30.518551)
+-   Structure predictions: [Alphafold DB](https://alphafold.ebi.ac.uk)
+-   Transmembrane topology predictions: [TMbed](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-022-04873-x)
+-   Visualization: [TMvis](https://github.com/Rostlab/TMvis)
+-   Protein-specific phenotype predictions: [LambdaPP](https://embed.predictprotein.org)
+-   Structural aligments: [Foldseek](https://search.foldseek.com/search)
 
 #### Software
 
-- Website: [Streamlit](https://streamlit.io), [pandas](https://pandas.pydata.org)
-- Database: [MongoDB](https://www.mongodb.com), [pymongo](https://github.com/mongodb/mongo-python-driver)
-- 3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu)
+-   Website: [Streamlit](https://streamlit.io), [pandas](https://pandas.pydata.org)
+-   Database: [MongoDB](https://www.mongodb.com), [pymongo](https://github.com/mongodb/mongo-python-driver)
+-   3D Visualization: [py3Dmol](https://3dmol.csb.pitt.edu)
 
 #### Development & Maintenance
 
-- Corresponding Author: [Céline Marquet](https://github.com/C-Marquet)
-- License: [License](https://license.com/)
-- Resources & Maintenance: [Rostlab](https://rostlab.org)
+-   Corresponding Author: [Céline Marquet](https://github.com/C-Marquet)
+-   License: [License](https://license.com/)
+-   Resources & Maintenance: [Rostlab](https://rostlab.org)
